@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>DesbravaQuiz · Painel do Administrador</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+:root{--verde:#1F5D3A;--verde-esc:#143D27;--verde-claro:#E3F0E6;--verde-ok:#2E9E5B;--amarelo:#FFC531;--amarelo-esc:#D9A100;--amarelo-claro:#FFF3C9;--vermelho:#D7362B;--vermelho-txt:#B42318;--papel:#FBF8EF;--areia:#F1ECDD;--borda:#E6E1D1;--borda2:#D8D2BF;--tinta:#1B2A20;--cinza:#5B6B60}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--papel);font-family:'Nunito',system-ui,sans-serif;color:var(--tinta)}
+button,input,select,textarea{font-family:inherit;color:inherit}
+button{cursor:pointer}
+.h{font-family:'Baloo 2',system-ui,sans-serif;font-weight:800;margin:0;line-height:1.1}
+.row{display:flex;align-items:center;gap:10px}
+.between{justify-content:space-between}
+.wrap{flex-wrap:wrap}
+.grow{flex:1;min-width:0}
+.muted{color:var(--cinza)}
+.small{font-size:13px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:12px;border:0;font-weight:800;font-size:15px;text-decoration:none}
+.btn-y{background:var(--amarelo);color:var(--tinta);box-shadow:0 3px 0 var(--amarelo-esc)}
+.btn-g{background:var(--verde);color:#fff}
+.btn-o{background:#fff;border:2px solid var(--verde);color:var(--verde)}
+.btn-r{background:var(--vermelho);color:#fff}
+.btn-ro{background:#fff;border:2px solid var(--vermelho);color:var(--vermelho-txt)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.chip{border:0;border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:800;background:var(--areia)}
+.pill{border-radius:999px;padding:4px 10px;font-size:12px;font-weight:800;display:inline-block}
+.card{background:#fff;border:1px solid var(--borda);border-radius:16px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label,.lbl{font-size:13.5px;font-weight:800}
+.inp{min-height:44px;border:2px solid var(--borda2);border-radius:12px;background:#fff;padding:0 12px;font-size:15px;width:100%}
+.inp:focus{outline:none;border-color:var(--verde)}
+textarea.inp{padding:10px 12px;min-height:110px;resize:vertical;line-height:1.45}
+.err{color:var(--vermelho-txt);font-weight:700;font-size:14px}
+.ok{color:var(--verde);font-weight:700;font-size:14px}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{background:var(--areia);text-align:left;padding:10px 12px;white-space:nowrap}
+.tbl td{padding:10px 12px;border-top:1px solid var(--areia);vertical-align:top}
+.tblbox{overflow-x:auto}
+.layout{display:flex;flex-wrap:wrap;min-height:100vh}
+nav.side{flex:1 1 230px;max-width:260px;background:var(--verde-esc);color:#fff;padding:20px 14px;display:flex;flex-direction:column;gap:4px}
+nav.side button{text-align:left;border:0;background:transparent;color:#E3F0E6;padding:10px 12px;border-radius:10px;font-size:15px;font-weight:700}
+nav.side button.on{background:var(--amarelo);color:var(--tinta)}
+main{flex:999 1 560px;min-width:0;padding:24px;display:flex;flex-direction:column;gap:18px}
+.grid2{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--tinta);color:#fff;padding:12px 18px;border-radius:12px;font-weight:700;z-index:50;max-width:90%;text-align:center}
+.modal-bg{position:fixed;inset:0;background:rgba(14,42,27,.55);display:flex;align-items:center;justify-content:center;z-index:40;padding:16px}
+.modal{background:#fff;border-radius:20px;padding:22px;max-width:480px;width:100%;display:flex;flex-direction:column;gap:12px}
+.busy{position:fixed;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--amarelo),var(--verde));z-index:60;animation:b 1s linear infinite}
+@keyframes b{0%{opacity:.4}50%{opacity:1}100%{opacity:.4}}
+.p{margin:0;line-height:1.55}
+.imgph{height:110px;border:2px dashed var(--borda2);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--cinza);font-weight:700;font-size:13px;text-align:center;padding:0 10px}
+.prev{background:var(--papel);border:1px solid var(--borda);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;max-width:420px}
+@media (max-width:720px){nav.side{max-width:none;flex-direction:row;flex-wrap:wrap}main{padding:14px}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+// =====================================================================
+//  DesbravaQuiz · Painel do Administrador (Etapa 1 · v0.1)
+//  1) Cole abaixo a configuração do app Web do Firebase.
+//  2) Publique este arquivo no GitHub Pages.
+// =====================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyDY2JKBk_yhRitXYKTCJtHvgiwrGeQOu7U",
+  authDomain: "desbravaquiz-a2a82.firebaseapp.com",
+  projectId: "desbravaquiz-a2a82",
+  storageBucket: "desbravaquiz-a2a82.firebasestorage.app",
+  messagingSenderId: "206295901768",
+  appId: "1:206295901768:web:30e750f73633958338da7d"
+};
+const FIREBASE_VERSION = '13.1.0';
+const ADMIN_EMAIL = 'dbvquiz@gmail.com';
+const SESSION_MIN = 30;
+const SEED = {"versao": 1, "gerado_em": "2026-11-11", "unioes": [{"id": "UNB", "nome": "União Norte Brasileira", "sigla": "UNB", "estados": "Amapá, Maranhão e Pará", "ativo": true}, {"id": "UNeB", "nome": "União Nordeste Brasileira", "sigla": "UNeB", "estados": "Alagoas, Ceará, Paraíba, Pernambuco, Piauí e Rio Grande do Norte", "ativo": true}, {"id": "ULB", "nome": "União Leste Brasileira", "sigla": "ULB", "estados": "Bahia e Sergipe", "ativo": true}, {"id": "UNoB", "nome": "União Noroeste Brasileira", "sigla": "UNoB", "estados": "Acre, Amazonas, Rondônia e Roraima", "ativo": true}, {"id": "UCoB", "nome": "União Centro-Oeste Brasileira", "sigla": "UCoB", "estados": "Distrito Federal, Goiás, Mato Grosso, Mato Grosso do Sul e Tocantins", "ativo": true}, {"id": "USeB", "nome": "União Sudeste Brasileira", "sigla": "USeB", "estados": "Espírito Santo, Minas Gerais e Rio de Janeiro", "ativo": true}, {"id": "USB", "nome": "União Sul Brasileira", "sigla": "USB", "estados": "Paraná, Rio Grande do Sul e Santa Catarina", "ativo": true}, {"id": "UCB", "nome": "União Central Brasileira", "sigla": "UCB", "estados": "São Paulo", "ativo": true}], "associacoes": [{"id": "AMa", "nome": "Associação Maranhense", "sigla": "AMa", "tipo": "Associação", "uniao": "UNB", "ativo": true}, {"id": "ANPa", "nome": "Associação Norte do Pará", "sigla": "ANPa", "tipo": "Associação", "uniao": "UNB", "ativo": true}, {"id": "ASPa", "nome": "Associação Sul do Pará", "sigla": "ASPa", "tipo": "Associação", "uniao": "UNB", "ativo": true}, {"id": "ASuMa", "nome": "Associação Sul Maranhense", "sigla": "ASuMa", "tipo": "Associação", "uniao": "UNB", "ativo": true}, {"id": "MNeM", "nome": "Missão Nordeste Maranhense", "sigla": "MNeM", "tipo": "Missão", "uniao": "UNB", "ativo": true}, {"id": "MOPa", "nome": "Missão Oeste do Pará", "sigla": "MOPa", "tipo": "Missão", "uniao": "UNB", "ativo": true}, {"id": "MPA", "nome": "Missão Pará Amapá", "sigla": "MPA", "tipo": "Missão", "uniao": "UNB", "ativo": true}, {"id": "ACe", "nome": "Associação Cearense", "sigla": "ACe", "tipo": "Associação", "uniao": "UNeB", "ativo": true}, {"id": "ALP", "nome": "Associação Leste Pernambucana", "sigla": "ALP", "tipo": "Associação", "uniao": "UNeB", "ativo": true}, {"id": "APeC", "nome": "Associação Pernambucana Central", "sigla": "APeC", "tipo": "Associação", "uniao": "UNeB", "ativo": true}, {"id": "MisAl", "nome": "Missão Alagoas", "sigla": "MisAl", "tipo": "Missão", "uniao": "UNeB", "ativo": true}, {"id": "MPi", "nome": "Missão Piauense", "sigla": "MPi", "tipo": "Missão", "uniao": "UNeB", "ativo": true}, {"id": "MRP", "nome": "Missão Rio Grande do Norte-Paraíba", "sigla": "MRP", "tipo": "Missão", "uniao": "UNeB", "ativo": true}, {"id": "AB", "nome": "Associação Bahia", "sigla": "AB", "tipo": "Associação", "uniao": "ULB", "ativo": true}, {"id": "ABaC", "nome": "Associação Bahia Central", "sigla": "ABaC", "tipo": "Associação", "uniao": "ULB", "ativo": true}, {"id": "ABN", "nome": "Associação Bahia Norte", "sigla": "ABN", "tipo": "Associação", "uniao": "ULB", "ativo": true}, {"id": "ABS", "nome": "Associação Bahia Sul", "sigla": "ABS", "tipo": "Associação", "uniao": "ULB", "ativo": true}, {"id": "MiBES", "nome": "Missão Bahia Extremo Sul", "sigla": "MiBES", "tipo": "Missão", "uniao": "ULB", "ativo": true}, {"id": "MBSo", "nome": "Missão Bahia Sudoeste", "sigla": "MBSo", "tipo": "Missão", "uniao": "ULB", "ativo": true}, {"id": "MSe", "nome": "Missão Sergipe", "sigla": "MSe", "tipo": "Missão", "uniao": "ULB", "ativo": true}, {"id": "AAmaR", "nome": "Associação Amazonas Roraima", "sigla": "AAmaR", "tipo": "Associação", "uniao": "UNoB", "ativo": true}, {"id": "ACeAm", "nome": "Associação Central Amazonas", "sigla": "ACeAm", "tipo": "Associação", "uniao": "UNoB", "ativo": true}, {"id": "ANRA", "nome": "Associação Norte de Rondônia e Acre", "sigla": "ANRA", "tipo": "Associação", "uniao": "UNoB", "ativo": true}, {"id": "ASuR", "nome": "Associação Sul de Rondônia", "sigla": "ASuR", "tipo": "Associação", "uniao": "UNoB", "ativo": true}, {"id": "MLA", "nome": "Missão Leste Amazonas", "sigla": "MLA", "tipo": "Missão", "uniao": "UNoB", "ativo": true}, {"id": "ABC", "nome": "Associação Brasil Central", "sigla": "ABC", "tipo": "Associação", "uniao": "UCoB", "ativo": true}, {"id": "ALM", "nome": "Associação Leste Mato-Grossense", "sigla": "ALM", "tipo": "Associação", "uniao": "UCoB", "ativo": true}, {"id": "AOM", "nome": "Associação Oeste Mato-Grossense", "sigla": "AOM", "tipo": "Associação", "uniao": "UCoB", "ativo": true}, {"id": "APlaC", "nome": "Associação Planalto Central", "sigla": "APlaC", "tipo": "Associação", "uniao": "UCoB", "ativo": true}, {"id": "ASM", "nome": "Associação Sul Mato-Grossense", "sigla": "ASM", "tipo": "Associação", "uniao": "UCoB", "ativo": true}, {"id": "MTo", "nome": "Missão do Tocantins", "sigla": "MTo", "tipo": "Missão", "uniao": "UCoB", "ativo": true}, {"id": "AES", "nome": "Associação Espírito-Santense", "sigla": "AES", "tipo": "Associação", "uniao": "USeB", "ativo": true}, {"id": "AMC", "nome": "Associação Mineira Central", "sigla": "AMC", "tipo": "Associação", "uniao": "USeB", "ativo": true}, {"id": "AML", "nome": "Associação Mineira Leste", "sigla": "AML", "tipo": "Associação", "uniao": "USeB", "ativo": true}, {"id": "AMS", "nome": "Associação Mineira Sul", "sigla": "AMS", "tipo": "Associação", "uniao": "USeB", "ativo": true}, {"id": "ARC", "nome": "Associação Rio Central", "sigla": "ARC", "tipo": "Associação", "uniao": "USeB", "ativo": true}, {"id": "ARF", "nome": "Associação Rio Fluminense", "sigla": "ARF", "tipo": "Associação", "uniao": "USeB", "ativo": true}, {"id": "ARS", "nome": "Associação Rio Sul", "sigla": "ARS", "tipo": "Associação", "uniao": "USeB", "ativo": true}, {"id": "ASES", "nome": "Associação Sul Espírito-Santense", "sigla": "ASES", "tipo": "Associação", "uniao": "USeB", "ativo": true}, {"id": "MMN", "nome": "Missão Mineira Norte", "sigla": "MMN", "tipo": "Missão", "uniao": "USeB", "ativo": true}, {"id": "MMO", "nome": "Missão Mineira Oeste", "sigla": "MMO", "tipo": "Missão", "uniao": "USeB", "ativo": true}, {"id": "ACRS", "nome": "Associação Central do Rio Grande do Sul", "sigla": "ACRS", "tipo": "Associação", "uniao": "USB", "ativo": true}, {"id": "ACP", "nome": "Associação Central Paranaense", "sigla": "ACP", "tipo": "Associação", "uniao": "USB", "ativo": true}, {"id": "ANC", "nome": "Associação Norte Catarinense", "sigla": "ANC", "tipo": "Associação", "uniao": "USB", "ativo": true}, {"id": "ANRS", "nome": "Associação Norte do Rio Grande do Sul", "sigla": "ANRS", "tipo": "Associação", "uniao": "USB", "ativo": true}, {"id": "ANP", "nome": "Associação Norte Paranaense", "sigla": "ANP", "tipo": "Associação", "uniao": "USB", "ativo": true}, {"id": "AOP", "nome": "Associação Oeste Paranaense", "sigla": "AOP", "tipo": "Associação", "uniao": "USB", "ativo": true}, {"id": "ASC", "nome": "Associação Sul Catarinense", "sigla": "ASC", "tipo": "Associação", "uniao": "USB", "ativo": true}, {"id": "ASRS", "nome": "Associação Sul do Rio Grande do Sul", "sigla": "ASRS", "tipo": "Associação", "uniao": "USB", "ativo": true}, {"id": "ASP", "nome": "Associação Sul Paranaense", "sigla": "ASP", "tipo": "Associação", "uniao": "USB", "ativo": true}, {"id": "APaC", "nome": "Associação Paulista Central", "sigla": "APaC", "tipo": "Associação", "uniao": "UCB", "ativo": true}, {"id": "APV", "nome": "Associação Paulista do Vale", "sigla": "APV", "tipo": "Associação", "uniao": "UCB", "ativo": true}, {"id": "APL", "nome": "Associação Paulista Leste", "sigla": "APL", "tipo": "Associação", "uniao": "UCB", "ativo": true}, {"id": "APO", "nome": "Associação Paulista Oeste", "sigla": "APO", "tipo": "Associação", "uniao": "UCB", "ativo": true}, {"id": "APSe", "nome": "Associação Paulista Sudeste", "sigla": "APSe", "tipo": "Associação", "uniao": "UCB", "ativo": true}, {"id": "APSo", "nome": "Associação Paulista Sudoeste", "sigla": "APSo", "tipo": "Associação", "uniao": "UCB", "ativo": true}, {"id": "APS", "nome": "Associação Paulista Sul", "sigla": "APS", "tipo": "Associação", "uniao": "UCB", "ativo": true}, {"id": "AP", "nome": "Associação Paulistana", "sigla": "AP", "tipo": "Associação", "uniao": "UCB", "ativo": true}], "areas": [{"id": "AD", "nome": "ADRA", "cor": "Azul-escuro", "hex": "#1E3A8A", "ordem": 1}, {"id": "HM", "nome": "Artes e Habilidades Manuais", "cor": "Azul-claro", "hex": "#5BB4EC", "ordem": 2}, {"id": "AA", "nome": "Atividades Agrícolas", "cor": "Marrom", "hex": "#7A4A1E", "ordem": 3}, {"id": "AM", "nome": "Atividades Missionárias e Comunitárias", "cor": "Azul-marinho", "hex": "#14275C", "ordem": 4}, {"id": "EB", "nome": "Ensinos Bíblicos", "cor": "Azul-marinho", "hex": "#14275C", "ordem": 5}, {"id": "AP", "nome": "Atividades Profissionais", "cor": "Vermelho", "hex": "#C62828", "ordem": 6}, {"id": "AR", "nome": "Atividades Recreativas", "cor": "Verde", "hex": "#2E7A4E", "ordem": 7}, {"id": "CS", "nome": "Ciência e Saúde", "cor": "Roxo", "hex": "#6B3FA0", "ordem": 8}, {"id": "EN", "nome": "Estudos da Natureza", "cor": "Cinza", "hex": "#5F6B66", "ordem": 9}, {"id": "HD", "nome": "Habilidades Domésticas", "cor": "Amarelo", "hex": "#FFC531", "ordem": 10}], "classes": [{"id": 1, "nome": "Amigo"}, {"id": 2, "nome": "Companheiro"}, {"id": 3, "nome": "Pesquisador"}, {"id": 4, "nome": "Pioneiro"}, {"id": 5, "nome": "Excursionista"}, {"id": 6, "nome": "Guia"}, {"id": 7, "nome": "Líder"}, {"id": 8, "nome": "Líder Master"}, {"id": 9, "nome": "Líder Master Avançado"}], "config": {"limiteDiarioPontos": 300, "temporada": "trimestral", "precoAssinatura": "R$ 20,00 semestral", "diasGratis": 15}};
+
+// ---------- utilidades e segurança ----------
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const CTRL=/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F​-‏‪-‮⁠-⁩﻿]/g;
+function cleanBase(v){ return String(v==null?'':v).normalize('NFC').replace(/\r\n?/g,'\n').replace(CTRL,'').replace(/<\/?[a-z!?][^>]*>/gi,'').replace(/<!--[\s\S]*?-->/g,'').replace(/\b(java|vb)script\s*:/gi,'').replace(/\bdata\s*:\s*text\/html/gi,'').replace(/\bon[a-z]+\s*=/gi,''); }
+const cleanLine=(v,max)=>cleanBase(v).replace(/\s+/g,' ').trim().slice(0,max);
+const cleanBlock=(v,max)=>cleanBase(v).replace(/[ \t]+/g,' ').replace(/\n{3,}/g,'\n\n').trim().slice(0,max);
+const cleanName=(v,max)=>cleanLine(v,max).replace(/[^\p{L}\p{N} .'\-]/gu,'').replace(/\s+/g,' ').trim();
+const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+const rich=t=>esc(t).replace(/\*\*(.+?)\*\*/gs,'<strong>$1</strong>').split(/\n{2,}/).map(p=>'<p class="p">'+p.replace(/\n/g,'<br>')+'</p>').join('');
+const fmtDate=ms=>ms?new Date(ms).toLocaleString('pt-BR'):'';
+const N_TXT=6, N_IMG=5;
+const AREAS_PADRAO={AD:['ADRA','#1E3A8A'],HM:['Artes e Habilidades Manuais','#5BB4EC'],AA:['Atividades Agrícolas','#7A4A1E'],AM:['Atividades Missionárias e Comunitárias','#14275C'],EB:['Ensinos Bíblicos','#14275C'],AP:['Atividades Profissionais','#C62828'],AR:['Atividades Recreativas','#2E7A4E'],CS:['Ciência e Saúde','#6B3FA0'],EN:['Estudos da Natureza','#5F6B66'],HD:['Habilidades Domésticas','#FFC531']};
+const areaNome=k=>(AREAS_PADRAO[k]||[k])[0], areaCor=k=>(AREAS_PADRAO[k]||[0,'#5F6B66'])[1], areaFg=k=>k==='HD'||k==='HM'?'#1B2A20':'#fff';
+
+// ---------- camada de dados (Firebase real ou simulação com ?mock) ----------
+const MOCK = new URLSearchParams(location.search).has('mock');
+let api;
+async function initApi(){
+  if(MOCK){
+    const store={}; let user=null, cb=()=>{};
+    const col=c=>store[c]||(store[c]={});
+    api={ mock:true,
+      onAuth:f=>{cb=f; f(user);},
+      login:async(e,p)=>{ if(e!==ADMIN_EMAIL||p!=='teste12345'){ const er=new Error('x'); er.code='auth/invalid-credential'; throw er; } user={email:e,uid:'MOCK'}; cb(user); },
+      logout:async()=>{ user=null; cb(null); },
+      resetPw:async()=>{},
+      list:async(c,w)=>Object.entries(col(c)).map(([id,d])=>({id,...d})).filter(d=>!w||d[w[0]]===w[1]),
+      get:async(c,id)=>col(c)[id]?{id,...col(c)[id]}:null,
+      set:async(c,id,d,merge=true)=>{ col(c)[id]=merge?{...(col(c)[id]||{}),...d}:{...d}; },
+      add:async(c,d)=>{ const id=Math.random().toString(36).slice(2,12); col(c)[id]={...d}; return id; },
+      del:async(c,id)=>{ delete col(c)[id]; },
+      batch:async ops=>{ for(const o of ops){ if(o.del) delete col(o.col)[o.id]; else col(o.col)[o.id]={...(col(o.col)[o.id]||{}),...o.data}; } }
+    };
+    return;
+  }
+  if(String(firebaseConfig.apiKey).includes('COLE_AQUI')) throw new Error('config');
+  const base=`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/`;
+  const {initializeApp}=await import(base+'firebase-app.js');
+  const A=await import(base+'firebase-auth.js');
+  const F=await import(base+'firebase-firestore.js');
+  const app=initializeApp(firebaseConfig); const auth=A.getAuth(app); const db=F.getFirestore(app);
+  await A.setPersistence(auth, A.browserSessionPersistence);
+  api={
+    onAuth:f=>A.onAuthStateChanged(auth,f),
+    login:(e,p)=>A.signInWithEmailAndPassword(auth,e,p),
+    logout:()=>A.signOut(auth),
+    resetPw:e=>A.sendPasswordResetEmail(auth,e),
+    list:async(c,w)=>{ const q=w?F.query(F.collection(db,c),F.where(w[0],'==',w[1])):F.collection(db,c); const s=await F.getDocs(q); return s.docs.map(d=>({id:d.id,...d.data()})); },
+    get:async(c,id)=>{ const s=await F.getDoc(F.doc(db,c,id)); return s.exists()?{id:s.id,...s.data()}:null; },
+    set:(c,id,d,merge=true)=>F.setDoc(F.doc(db,c,id),d,{merge}),
+    add:async(c,d)=>(await F.addDoc(F.collection(db,c),d)).id,
+    del:(c,id)=>F.deleteDoc(F.doc(db,c,id)),
+    batch:async ops=>{ for(let i=0;i<ops.length;i+=400){ const b=F.writeBatch(db); ops.slice(i,i+400).forEach(o=>{ const r=F.doc(db,o.col,o.id); if(o.del) b.delete(r); else b.set(r,o.data,{merge:true}); }); await b.commit(); } }
+  };
+}
+
+// ---------- estado ----------
+const S={ user:null, tab:'inicio', busy:false, err:'', msg:'', toast:'', modal:null,
+  specs:[], unioes:[], assocs:[], avisos:[], feedbacks:[], qs:[], qSpec:'', qEdit:null, specEdit:null, matSpec:'', mat:null, loaded:false };
+const app=document.getElementById('app');
+let toastT=null, lastAct=Date.now();
+function toast(m){ S.toast=m; render(); clearTimeout(toastT); toastT=setTimeout(()=>{S.toast='';render();},2800); }
+function errMsg(e){ const c=(e&&e.code)||''; if(c.includes('permission')) return 'Sem permissão. Confira se o UID do administrador está nas regras do Firestore.'; if(c.includes('invalid-credential')||c.includes('wrong-password')||c.includes('user-not-found')) return 'E-mail ou senha incorretos.'; if(c.includes('too-many-requests')) return 'Muitas tentativas. Aguarde alguns minutos.'; if(c.includes('unavailable')||c.includes('network')) return 'Sem conexão com a internet.'; return 'Erro: '+((e&&e.message)||e); }
+async function run(fn){ S.busy=true; S.err=''; render(); try{ await fn(); }catch(e){ console.error(e); S.err=errMsg(e); } S.busy=false; render(); }
+
+// ---------- carregamento ----------
+async function loadAll(){
+  const [specs,unioes,assocs,avisos]=await Promise.all([api.list('especialidades'),api.list('unioes'),api.list('associacoes'),api.list('avisos')]);
+  S.specs=specs.sort((a,b)=>String(a.codigo).localeCompare(String(b.codigo)));
+  S.unioes=unioes.sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt'));
+  S.assocs=assocs.sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt'));
+  S.avisos=avisos.sort((a,b)=>(b.criadoEm||0)-(a.criadoEm||0));
+  try{ S.feedbacks=(await api.list('feedbacks')).sort((a,b)=>(b.criadoEm||0)-(a.criadoEm||0)); }catch(e){ S.feedbacks=[]; }
+  S.loaded=true;
+}
+function nextCode(area){ let n=0; S.specs.forEach(s=>{ const m=/^([A-Z]{2})-(\d{3})$/.exec(s.codigo||''); if(m&&m[1]===area) n=Math.max(n,+m[2]); }); return area+'-'+String(n+1).padStart(3,'0'); }
+async function loadQs(id){ S.qSpec=id; S.qEdit=null; S.qs=id?(await api.list('perguntas',['espId',id])).sort((a,b)=>(a.criadaEm||0)-(b.criadaEm||0)):[]; }
+async function loadMat(id){ S.matSpec=id; S.mat=null; if(!id) return; const m=await api.get('materiais',id); const texts=Array.from({length:N_TXT},(_,i)=>({titulo:(m&&m.textos&&m.textos[i]&&m.textos[i].titulo)||'',corpo:(m&&m.textos&&m.textos[i]&&m.textos[i].corpo)||''}));
+  const imgs=[]; for(let i=0;i<N_IMG;i++){ const ref=m&&m.imagens&&m.imagens[i]; let data=''; if(ref&&ref.imgId){ const d=await api.get('imagens',ref.imgId); data=d?d.data:''; } imgs.push({imgId:(ref&&ref.imgId)||'',legenda:(ref&&ref.legenda)||'',data,changed:false}); }
+  S.mat={texts,imgs}; }
+
+// ---------- telas ----------
+function vLogin(){
+  return `<div style="min-height:100vh;background:var(--verde-esc);display:flex;align-items:center;justify-content:center;padding:20px">
+  <form data-f="login" class="card" style="max-width:400px;width:100%;padding:26px;display:flex;flex-direction:column;gap:14px" autocomplete="on">
+    <div class="row"><span style="width:52px;height:52px;border-radius:16px;background:var(--amarelo);display:flex;align-items:center;justify-content:center;font-family:'Baloo 2';font-weight:800;font-size:22px">DQ</span><div><h1 class="h" style="font-size:26px">Área restrita</h1><div class="small muted">DesbravaQuiz · Painel do administrador</div></div></div>
+    ${MOCK?'<div class="pill" style="background:var(--amarelo-claro);color:#7A5600">Modo simulação: senha teste12345</div>':''}
+    <div class="field"><label for="em">E-mail</label><input id="em" name="em" type="email" class="inp" value="${esc(ADMIN_EMAIL)}" autocomplete="username" required></div>
+    <div class="field"><label for="pw">Senha do painel</label><input id="pw" name="pw" type="password" class="inp" autocomplete="current-password" required></div>
+    ${S.err?`<div class="err">${esc(S.err)}</div>`:''}${S.msg?`<div class="ok">${esc(S.msg)}</div>`:''}
+    <button class="btn btn-g" type="submit" ${S.busy?'disabled':''}>Entrar</button>
+    <button class="btn" type="button" style="background:transparent;color:var(--verde)" data-a="reset">Esqueci a senha</button>
+  </form></div>`;
+}
+function vNav(){
+  const T=[['inicio','Início'],['specs','Especialidades'],['qs','Perguntas'],['mat','Material de estudo'],['avisos','Avisos'],['geo','Uniões e associações'],['backup','Importar / Exportar'],['fb','Feedbacks']];
+  return `<nav class="side" aria-label="Menu do painel"><div style="padding:0 8px 14px"><div class="h" style="font-size:21px">DesbravaQuiz</div><div class="small" style="color:#B9D6C2">Painel do administrador${api&&api.mock?' · SIMULAÇÃO':''}</div></div>
+    ${T.map(t=>`<button class="${S.tab===t[0]?'on':''}" data-a="tab" data-t="${t[0]}">${t[1]}</button>`).join('')}
+    <button data-a="logout" style="margin-top:14px;border:1px solid rgba(255,255,255,.3)">Sair do painel</button></nav>`;
+}
+function areaPill(k){ return `<span class="pill" style="background:${areaCor(k)};color:${areaFg(k)}">${esc(k)}</span>`; }
+function specOptions(sel){ return `<option value="">Escolha a especialidade</option>`+S.specs.map(s=>`<option value="${esc(s.id)}" ${s.id===sel?'selected':''}>${esc(s.codigo)} · ${esc(s.nome)}</option>`).join(''); }
+
+function vInicio(){
+  const semDados=!S.unioes.length;
+  return `<h1 class="h" style="font-size:30px">Início</h1>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
+    ${[['Especialidades',S.specs.length],['Publicadas',S.specs.filter(s=>s.publicada).length],['Uniões',S.unioes.length],['Associações/missões',S.assocs.length],['Avisos ativos',S.avisos.filter(a=>a.ativo).length],['Feedbacks',S.feedbacks.length]].map(x=>`<div class="card" style="padding:14px 16px"><div class="small muted" style="font-weight:700">${x[0]}</div><div class="h" style="font-size:30px;color:var(--verde)">${x[1]}</div></div>`).join('')}
+  </div>
+  <div class="card" style="padding:18px;display:flex;flex-direction:column;gap:10px;${semDados?'border:2px solid var(--amarelo)':''}">
+    <h2 class="h" style="font-size:20px">Dados iniciais</h2>
+    <p class="p muted">Envia para o banco as 8 uniões, as 58 associações/missões, as 10 áreas com cores, as 9 classes e as configurações (300 pontos por dia, 15 por especialidade, temporada trimestral). Pode ser usado de novo sem duplicar: só atualiza.</p>
+    <div><button class="btn ${semDados?'btn-y':'btn-o'}" data-a="seed" ${S.busy?'disabled':''}>${semDados?'Carregar dados iniciais':'Recarregar dados iniciais'}</button></div>
+  </div>`;
+}
+function vSpecs(){
+  const e=S.specEdit||(S.specEdit={id:'',nome:'',area:'AR',codigo:nextCode('AR'),paga:false,publicada:false});
+  return `<div class="row between wrap"><div><h1 class="h" style="font-size:30px">Especialidades</h1><div class="small muted">Nome, área, código (começa com a sigla da área) e acesso.</div></div><button class="btn btn-y" data-a="specNew">+ Nova especialidade</button></div>
+  <div class="grid2">
+    <div class="card tblbox" style="flex:999 1 480px;min-width:0"><table class="tbl"><thead><tr><th>Código</th><th>Nome</th><th>Área</th><th>Perguntas</th><th>Acesso</th><th>Status</th><th></th></tr></thead><tbody>
+      ${S.specs.map(s=>`<tr><td style="white-space:nowrap"><b>${esc(s.codigo)}</b></td><td style="font-weight:700">${esc(s.nome)}</td><td style="white-space:nowrap">${areaPill(s.area)} <span class="small muted">${esc(areaNome(s.area))}</span></td><td style="font-weight:800;color:${(s.nPerguntas||0)<15?'var(--vermelho-txt)':'var(--verde)'}">${s.nPerguntas||0}</td><td><span class="pill" style="background:${s.paga?'var(--amarelo-claro)':'#DDF0E2'};color:${s.paga?'#7A5600':'var(--verde)'}">${s.paga?'Paga':'Gratuita'}</span></td><td style="font-weight:700;color:${s.publicada?'var(--verde)':'var(--cinza)'}">${s.publicada?'Publicada':'Rascunho'}</td>
+        <td style="white-space:nowrap"><button class="chip" data-a="specEdit" data-id="${esc(s.id)}">Editar</button> <button class="chip" data-a="goQs" data-id="${esc(s.id)}">Perguntas</button> <button class="chip" data-a="goMat" data-id="${esc(s.id)}">Material</button></td></tr>`).join('') || '<tr><td colspan="7" class="muted">Nenhuma especialidade ainda.</td></tr>'}
+    </tbody></table></div>
+    <form class="card" data-f="spec" style="flex:1 1 300px;min-width:0;padding:18px;display:flex;flex-direction:column;gap:12px">
+      <h2 class="h" style="font-size:20px">${e.id?'Editar especialidade':'Nova especialidade'}</h2>
+      <div class="field"><label for="sp-n">Nome</label><input id="sp-n" name="nome" class="inp" value="${esc(e.nome)}" maxlength="60" required></div>
+      <div class="field"><label for="sp-a">Área</label><select id="sp-a" name="area" class="inp" data-ch="specArea">${Object.keys(AREAS_PADRAO).map(k=>`<option value="${k}" ${k===e.area?'selected':''}>${k} · ${esc(areaNome(k))}</option>`).join('')}</select></div>
+      <div class="field"><label for="sp-c">Código</label><input id="sp-c" name="codigo" class="inp" value="${esc(e.codigo)}" maxlength="6" required><span class="small muted">Formato ${esc(e.area)}-000</span></div>
+      <label class="row between" style="font-weight:800">Paga (só assinantes)<input type="checkbox" name="paga" ${e.paga?'checked':''} style="width:22px;height:22px;accent-color:var(--verde)"></label>
+      <label class="row between" style="font-weight:800">Publicada no app<input type="checkbox" name="publicada" ${e.publicada?'checked':''} style="width:22px;height:22px;accent-color:var(--verde)"></label>
+      <div class="small muted">Recomendado publicar só com 15 perguntas ou mais e o material pronto.</div>
+      ${S.err?`<div class="err">${esc(S.err)}</div>`:''}
+      <div class="row wrap"><button class="btn btn-g" type="submit" ${S.busy?'disabled':''}>Salvar</button>${e.id?`<button class="btn btn-ro" type="button" data-a="specDelAsk">Excluir</button>`:''}</div>
+    </form>
+  </div>`;
+}
+function vQs(){
+  const sp=S.specs.find(s=>s.id===S.qSpec); const qe=S.qEdit; const v=k=>qe?esc(k==='e1'?qe.erradas[0]:k==='e2'?qe.erradas[1]:k==='e3'?qe.erradas[2]:qe[k]||''):'';
+  return `<div><h1 class="h" style="font-size:30px">Perguntas</h1><div class="small muted">4 alternativas (1 certa), explicação curta. Mínimo recomendado: 15 por especialidade. No app a ordem das alternativas é sorteada.</div></div>
+  <div class="field" style="max-width:420px"><label for="q-sp">Especialidade</label><select id="q-sp" class="inp" data-ch="qSpec">${specOptions(S.qSpec)}</select></div>
+  ${sp?`<form class="card" data-f="q" id="q-form" style="padding:18px;display:flex;flex-direction:column;gap:10px;${qe?'border:2px solid var(--amarelo)':''}">
+    <h2 class="h" style="font-size:20px">${qe?'Editando pergunta':'Nova pergunta'} · ${esc(sp.nome)}</h2>
+    <div class="field"><label for="q-t">Enunciado</label><input id="q-t" name="enunciado" class="inp" maxlength="200" value="${v('enunciado')}" required></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
+      <div class="field"><label for="q-c" style="color:var(--verde)">Alternativa certa</label><input id="q-c" name="certa" class="inp" style="border-color:var(--verde-ok)" maxlength="120" value="${v('certa')}" required></div>
+      <div class="field"><label for="q-1">Errada 1</label><input id="q-1" name="e1" class="inp" maxlength="120" value="${v('e1')}" required></div>
+      <div class="field"><label for="q-2">Errada 2</label><input id="q-2" name="e2" class="inp" maxlength="120" value="${v('e2')}" required></div>
+      <div class="field"><label for="q-3">Errada 3</label><input id="q-3" name="e3" class="inp" maxlength="120" value="${v('e3')}" required></div>
+    </div>
+    <div class="field"><label for="q-x">Explicação (aparece depois da resposta)</label><input id="q-x" name="explicacao" class="inp" maxlength="300" value="${v('explicacao')}"></div>
+    <div class="field" style="max-width:220px"><label for="q-d">Dificuldade</label><select id="q-d" name="dificuldade" class="inp">${['facil','media','dificil'].map((d,i)=>`<option value="${d}" ${(qe?qe.dificuldade:'facil')===d?'selected':''}>${['Fácil','Média','Difícil'][i]}</option>`).join('')}</select></div>
+    ${S.err?`<div class="err">${esc(S.err)}</div>`:''}
+    <div class="row wrap"><button class="btn btn-y" type="submit" ${S.busy?'disabled':''}>${qe?'Salvar alterações':'Salvar pergunta'}</button>${qe?'<button class="btn btn-o" type="button" data-a="qCancel">Cancelar edição</button>':''}<span class="small muted">${S.qs.length} pergunta(s) cadastrada(s)</span></div>
+  </form>
+  <div class="card tblbox"><table class="tbl"><thead><tr><th>#</th><th>Pergunta</th><th>Certa</th><th>Erradas</th><th></th></tr></thead><tbody>
+    ${S.qs.map((q,i)=>`<tr style="${qe&&qe.id===q.id?'background:#FFFBEA':''}"><td>${i+1}</td><td>${esc(q.enunciado)}</td><td style="color:var(--verde);font-weight:700">${esc(q.certa)}</td><td class="small muted">${(q.erradas||[]).map(esc).join(' · ')}</td><td style="white-space:nowrap"><button class="chip" data-a="qEdit" data-id="${esc(q.id)}">Editar</button> <button class="chip" style="background:#FBE0DD;color:var(--vermelho-txt)" data-a="qDelAsk" data-id="${esc(q.id)}">Excluir</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted">Nenhuma pergunta ainda.</td></tr>'}
+  </tbody></table></div>`:'<p class="muted">Escolha uma especialidade para ver e cadastrar perguntas.</p>'}`;
+}
+function blocksHtml(m){ const out=[]; for(let i=0;i<N_TXT;i++){ const t=m.texts[i]; if(t&&(t.titulo||t.corpo)) out.push((t.titulo?`<h3 class="h" style="font-size:19px">${esc(t.titulo)}</h3>`:'')+(t.corpo?rich(t.corpo):'')); const im=m.imgs[i]; if(i<N_IMG&&im&&im.data) out.push(`<figure style="margin:0;display:flex;flex-direction:column;gap:6px"><img src="${esc(im.data)}" alt="${esc(im.legenda||'Imagem')}" style="width:100%;border-radius:12px">${im.legenda?`<figcaption class="small muted" style="text-align:center">${esc(im.legenda)}</figcaption>`:''}</figure>`); } return out.join('')||'<p class="muted">Nada para mostrar ainda.</p>'; }
+function vMat(){
+  const sp=S.specs.find(s=>s.id===S.matSpec); const m=S.mat; const parts=[];
+  if(sp&&m){ for(let i=0;i<N_TXT;i++){ const t=m.texts[i];
+      parts.push(`<div class="card" style="padding:14px;display:flex;flex-direction:column;gap:8px"><div class="row between"><span class="pill" style="background:#DCEBFB;color:#1A5AA6">Texto ${i+1}</span><button type="button" class="chip" style="background:var(--tinta);color:#fff;font-weight:900;min-width:44px;min-height:36px" data-a="bold" data-k="${i}" title="Negrito (Ctrl+B)">B</button></div>
+      <div class="field"><label for="mt-${i}">Subtítulo (opcional)</label><input id="mt-${i}" class="inp" data-mt="${i}" maxlength="80" value="${esc(t.titulo)}"></div>
+      <div class="field"><label for="mb-${i}">Texto</label><textarea id="mb-${i}" class="inp" data-mb="${i}" maxlength="2000">${esc(t.corpo)}</textarea></div></div>`);
+      if(i<N_IMG){ const im=m.imgs[i];
+        parts.push(`<div class="card" style="padding:14px;display:flex;flex-direction:column;gap:8px;background:#FFFDF6"><span class="pill" style="align-self:flex-start;background:#FFE8D6;color:#9A3D0A">Imagem ${i+1}</span>
+        ${im.data?`<img src="${esc(im.data)}" alt="" style="max-width:260px;width:100%;border-radius:12px">`:`<div class="imgph">Sem imagem (não aparece no app)</div>`}
+        <div class="row wrap"><label class="btn btn-o" style="cursor:pointer;position:relative">${im.data?'Trocar imagem':'Escolher imagem'}<input type="file" accept="image/png,image/jpeg,image/webp" data-img="${i}" style="position:absolute;width:1px;height:1px;opacity:0"></label>${im.data?`<button type="button" class="btn btn-ro" data-a="imgDel" data-i="${i}">Remover</button>`:''}</div>
+        <div class="field"><label for="mc-${i}">Legenda (opcional)</label><input id="mc-${i}" class="inp" data-mc="${i}" maxlength="120" value="${esc(im.legenda)}"></div></div>`); } } }
+  return `<div><h1 class="h" style="font-size:30px">Material de estudo</h1><div class="small muted">Ordem fixa: 6 textos intercalados com 5 imagens. Textos vazios e imagens não enviadas não aparecem no app. Negrito: selecione o trecho e toque em B (ou Ctrl+B).</div></div>
+  <div class="field" style="max-width:420px"><label for="m-sp">Especialidade</label><select id="m-sp" class="inp" data-ch="matSpec">${specOptions(S.matSpec)}</select></div>
+  ${sp&&m?`<div class="grid2"><div style="flex:999 1 420px;min-width:0;display:flex;flex-direction:column;gap:10px">${parts.join('')}
+    ${S.err?`<div class="err">${esc(S.err)}</div>`:''}
+    <div class="row wrap"><button class="btn btn-y" data-a="matSave" ${S.busy?'disabled':''}>Salvar material</button><button class="btn btn-o" data-a="matReload">Desfazer alterações</button></div></div>
+    <div style="flex:1 1 300px;min-width:0;position:sticky;top:12px"><div class="small muted" style="font-weight:800;margin-bottom:6px">PRÉVIA NO CELULAR</div><div class="prev" id="mat-prev">${blocksHtml(m)}</div></div></div>`:(sp?'<p class="muted">Carregando…</p>':'<p class="muted">Escolha uma especialidade.</p>')}`;
+}
+function vAvisos(){
+  return `<div><h1 class="h" style="font-size:30px">Avisos para todos</h1><div class="small muted">Aparecem em uma janela para cada participante ao entrar no app, uma vez por pessoa.</div></div>
+  <form class="card" data-f="aviso" style="padding:18px;display:flex;flex-direction:column;gap:10px">
+    <div class="field"><label for="av-t">Título</label><input id="av-t" name="titulo" class="inp" maxlength="60" required></div>
+    <div class="field"><label for="av-m">Mensagem (até 400 caracteres)</label><textarea id="av-m" name="mensagem" class="inp" maxlength="400" required></textarea></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px"><div class="field"><label for="av-k">Tipo</label><select id="av-k" name="tipo" class="inp"><option value="info">Informação</option><option value="importante">Importante</option></select></div><div class="field"><label for="av-u">Mostrar até (opcional)</label><input id="av-u" name="ate" type="date" class="inp"></div></div>
+    <div><button class="btn btn-y" type="submit" ${S.busy?'disabled':''}>Publicar aviso</button></div>
+  </form>
+  ${S.avisos.map(a=>`<div class="card" style="padding:14px;display:flex;flex-direction:column;gap:6px;${a.ativo?'':'opacity:.6'}"><div class="row between wrap"><span class="row"><span class="pill" style="background:${a.tipo==='importante'?'#FBE0DD':'#DCEBFB'};color:${a.tipo==='importante'?'var(--vermelho-txt)':'#1A5AA6'}">${a.tipo==='importante'?'Importante':'Informação'}</span><b>${esc(a.titulo)}</b></span><span class="small muted">${esc(fmtDate(a.criadoEm))}${a.ate?' · até '+esc(a.ate.split('-').reverse().join('/')):''}</span></div><div style="white-space:pre-line">${esc(a.mensagem)}</div><div class="row"><button class="chip" data-a="avToggle" data-id="${esc(a.id)}">${a.ativo?'Desativar':'Reativar'}</button><button class="chip" style="background:#FBE0DD;color:var(--vermelho-txt)" data-a="avDel" data-id="${esc(a.id)}">Excluir</button></div></div>`).join('') || '<p class="muted">Nenhum aviso publicado.</p>'}`;
+}
+function vGeo(){
+  return `<div class="row between wrap"><div><h1 class="h" style="font-size:30px">Uniões e associações/missões</h1><div class="small muted">${S.unioes.length} uniões · ${S.assocs.length} associações/missões. Desativar esconde do cadastro sem apagar.</div></div></div>
+  <form class="card" data-f="assoc" style="padding:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
+    <div class="field" style="flex:2 1 220px"><label for="as-n">Nova associação ou missão</label><input id="as-n" name="nome" class="inp" maxlength="60" placeholder="Ex.: Missão ..." required></div>
+    <div class="field" style="flex:1 1 110px"><label for="as-s">Sigla</label><input id="as-s" name="sigla" class="inp" maxlength="8" required></div>
+    <div class="field" style="flex:2 1 220px"><label for="as-u">União</label><select id="as-u" name="uniao" class="inp" required>${S.unioes.map(u=>`<option value="${esc(u.id)}">${esc(u.nome)}</option>`).join('')}</select></div>
+    <button class="btn btn-g" type="submit">Adicionar</button>
+  </form>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">${S.unioes.map(u=>`<div class="card" style="padding:14px"><b>${esc(u.nome)} (${esc(u.sigla)})</b><div class="small muted">${esc(u.estados||'')}</div><div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">${S.assocs.filter(a=>a.uniao===u.id).map(a=>`<div class="row between small" style="${a.ativo===false?'opacity:.5;text-decoration:line-through':''}"><span>${esc(a.nome)} <span class="muted">(${esc(a.sigla)})</span></span><button class="chip" style="padding:3px 8px" data-a="asToggle" data-id="${esc(a.id)}">${a.ativo===false?'Ativar':'Desativar'}</button></div>`).join('')}</div></div>`).join('') || '<p class="muted">Nada ainda. Use "Carregar dados iniciais" na tela Início.</p>'}</div>`;
+}
+function vBackup(){
+  return `<div><h1 class="h" style="font-size:30px">Importar / Exportar</h1><div class="small muted">Cópia de segurança das especialidades, perguntas e materiais em arquivo .json. A importação por planilha (CSV) vem numa próxima versão.</div></div>
+  <div class="card" style="padding:18px;display:flex;flex-direction:column;gap:10px"><h2 class="h" style="font-size:20px">Exportar</h2>
+    <label class="row" style="font-weight:700"><input type="checkbox" id="ex-img" style="width:20px;height:20px;accent-color:var(--verde)"> Incluir imagens (arquivo fica maior)</label>
+    <div><button class="btn btn-y" data-a="export" ${S.busy?'disabled':''}>Baixar arquivo de backup</button></div></div>
+  <div class="card" style="padding:18px;display:flex;flex-direction:column;gap:10px"><h2 class="h" style="font-size:20px">Importar</h2>
+    <p class="p muted">Envie um arquivo exportado por este painel. Itens com o mesmo código são atualizados; os novos são criados. Todos os textos passam pela limpeza de segurança.</p>
+    <label class="btn btn-o" style="cursor:pointer;position:relative;align-self:flex-start">Escolher arquivo .json<input type="file" accept="application/json,.json" data-import="1" style="position:absolute;width:1px;height:1px;opacity:0"></label>
+    ${S.err?`<div class="err">${esc(S.err)}</div>`:''}</div>`;
+}
+function vFb(){
+  return `<div><h1 class="h" style="font-size:30px">Feedbacks</h1><div class="small muted">Mensagens enviadas pelo app (Ajustes e "Reportar erro"). Começam a chegar na Etapa 7.</div></div>
+  ${S.feedbacks.map(f=>`<div class="card" style="padding:14px;display:flex;flex-direction:column;gap:4px"><div class="row between wrap"><span class="pill" style="background:var(--areia)">${esc(f.tipo||'Feedback')}</span><span class="small muted">${esc(fmtDate(f.criadoEm))} · ${esc(f.codigo||'')}</span></div><div style="white-space:pre-line">${esc(f.texto)}</div></div>`).join('') || '<p class="muted">Nenhum feedback ainda.</p>'}`;
+}
+function vModal(){ const m=S.modal; if(!m) return '';
+  return `<div class="modal-bg"><div class="modal" role="dialog" aria-modal="true"><h2 class="h" style="font-size:22px">${esc(m.title)}</h2><p class="p">${esc(m.text)}</p><div class="row wrap"><button class="btn ${m.danger?'btn-r':'btn-g'}" data-a="mOk">${esc(m.ok||'Confirmar')}</button><button class="btn btn-o" data-a="mNo">Cancelar</button></div></div></div>`; }
+function render(){
+  let h='';
+  if(S.cfgErr) h=`<div style="padding:30px;max-width:640px;margin:auto"><h1 class="h">Falta configurar</h1><p class="p">${esc(S.cfgErr)}</p></div>`;
+  else if(!S.user) h=vLogin();
+  else { const V={inicio:vInicio,specs:vSpecs,qs:vQs,mat:vMat,avisos:vAvisos,geo:vGeo,backup:vBackup,fb:vFb}[S.tab]; h=`<div class="layout">${vNav()}<main>${S.loaded?V():'<p class="muted">Carregando dados…</p>'}</main></div>`; }
+  h+=vModal(); if(S.toast) h+=`<div class="toast" role="status">${esc(S.toast)}</div>`; if(S.busy) h+='<div class="busy"></div>';
+  const ae=document.activeElement, fid=ae&&ae.id, pos=ae&&ae.selectionStart;
+  app.innerHTML=h;
+  if(fid){ const el=document.getElementById(fid); if(el&&(el.tagName==='INPUT'||el.tagName==='TEXTAREA')){ el.focus(); try{el.setSelectionRange(pos,pos);}catch(e){} } }
+}
+
+// ---------- imagens ----------
+function resizeImage(file){ return new Promise((ok,bad)=>{ const r=new FileReader(); r.onerror=bad; r.onload=()=>{ const im=new Image(); im.onerror=bad; im.onload=()=>{ let max=900, q=0.78, out=''; for(let t=0;t<6;t++){ const k=Math.min(1,max/Math.max(im.width,im.height)); const c=document.createElement('canvas'); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k); const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(im,0,0,c.width,c.height); out=c.toDataURL('image/jpeg',q); if(out.length<600000) break; max=Math.round(max*0.8); q=Math.max(0.5,q-0.08); } ok(out); }; im.src=r.result; }; r.readAsDataURL(file); }); }
+const validImg=s=>/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(s||'') && s.length<900000;
+function matPreview(){ const el=document.getElementById('mat-prev'); if(el&&S.mat) el.innerHTML=blocksHtml(S.mat); }
+
+// ---------- ações ----------
+function ask(title,text,ok,fn,danger){ S.modal={title,text,ok,fn,danger}; render(); }
+async function recountSpec(id){ const n=(await api.list('perguntas',['espId',id])).length; await api.set('especialidades',id,{nPerguntas:n,atualizadaEm:Date.now()}); const s=S.specs.find(x=>x.id===id); if(s) s.nPerguntas=n; }
+function download(name,text){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:'application/json'})); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},500); }
+
+app.addEventListener('click', e=>{
+  const b=e.target.closest('[data-a]'); if(!b||b.disabled) return; const a=b.dataset.a; lastAct=Date.now();
+  switch(a){
+    case 'tab': S.tab=b.dataset.t; S.err=''; render(); if(S.tab==='qs'&&S.qSpec) run(()=>loadQs(S.qSpec)); if(S.tab==='mat'&&S.matSpec&&!S.mat) run(()=>loadMat(S.matSpec)); break;
+    case 'logout': api.logout(); break;
+    case 'reset': { const em=(document.getElementById('em')||{}).value||ADMIN_EMAIL; run(async()=>{ await api.resetPw(em); S.msg='Enviamos um e-mail para redefinir a senha.'; }); break; }
+    case 'mOk': { const m=S.modal; S.modal=null; render(); if(m&&m.fn) m.fn(); break; }
+    case 'mNo': S.modal=null; render(); break;
+    case 'seed': ask('Carregar dados iniciais?','Uniões, associações/missões, áreas, classes e configurações serão gravadas ou atualizadas no banco.','Carregar',()=>run(async()=>{
+        const ops=[]; SEED.unioes.forEach(u=>ops.push({col:'unioes',id:u.id,data:u})); SEED.associacoes.forEach(x=>ops.push({col:'associacoes',id:x.id,data:x})); SEED.areas.forEach(x=>ops.push({col:'areas',id:x.id,data:x}));
+        ops.push({col:'config',id:'classes',data:{lista:SEED.classes.map(c=>c.nome)}}); ops.push({col:'config',id:'geral',data:{limiteDiarioPontos:300,tetoPorEspecialidade:15,temporada:'trimestral',rankingMinutos:10,assinatura:{preco:'R$ 20,00',periodo:'semestral',diasGratis:15}}});
+        await api.batch(ops); await loadAll(); toast('Dados iniciais carregados!'); })); break;
+    case 'specNew': S.specEdit=null; S.err=''; render(); break;
+    case 'specEdit': { const s=S.specs.find(x=>x.id===b.dataset.id); S.specEdit={...s}; S.err=''; render(); window.scrollTo({top:0,behavior:'smooth'}); break; }
+    case 'specDelAsk': { const s=S.specEdit; ask('Excluir '+s.nome+'?','A especialidade, todas as perguntas e o material dela serão apagados. Não pode ser desfeito.','Excluir tudo',()=>run(async()=>{
+        const qs=await api.list('perguntas',['espId',s.id]); const ops=qs.map(q=>({col:'perguntas',id:q.id,del:true})); const m=await api.get('materiais',s.id); if(m){ (m.imagens||[]).forEach(r=>{ if(r&&r.imgId) ops.push({col:'imagens',id:r.imgId,del:true}); }); ops.push({col:'materiais',id:s.id,del:true}); } ops.push({col:'especialidades',id:s.id,del:true});
+        await api.batch(ops); S.specs=S.specs.filter(x=>x.id!==s.id); S.specEdit=null; toast('Especialidade excluída'); }),true); break; }
+    case 'goQs': S.tab='qs'; run(()=>loadQs(b.dataset.id)); break;
+    case 'goMat': S.tab='mat'; run(()=>loadMat(b.dataset.id)); break;
+    case 'qEdit': S.qEdit=S.qs.find(q=>q.id===b.dataset.id); S.err=''; render(); { const f=document.getElementById('q-form'); if(f) f.scrollIntoView({behavior:'smooth'}); } break;
+    case 'qCancel': S.qEdit=null; render(); break;
+    case 'qDelAsk': { const q=S.qs.find(x=>x.id===b.dataset.id); ask('Excluir pergunta?',q.enunciado,'Excluir',()=>run(async()=>{ await api.del('perguntas',q.id); S.qs=S.qs.filter(x=>x.id!==q.id); await recountSpec(S.qSpec); toast('Pergunta excluída'); }),true); break; }
+    case 'bold': { const i=+b.dataset.k; const ta=document.getElementById('mb-'+i); if(!ta) break; let st=ta.selectionStart, en=ta.selectionEnd; const v=ta.value; while(st<en&&/\s/.test(v[st])) st++; while(en>st&&/\s/.test(v[en-1])) en--; const sel=v.slice(st,en); let nv,cs,ce;
+      if(sel&&/^\*\*[\s\S]*\*\*$/.test(sel)){ nv=v.slice(0,st)+sel.slice(2,-2)+v.slice(en); cs=st; ce=en-4; } else if(sel){ nv=v.slice(0,st)+'**'+sel+'**'+v.slice(en); cs=st; ce=en+4; } else { nv=v.slice(0,st)+'**texto em negrito**'+v.slice(en); cs=st+2; ce=st+18; }
+      ta.value=nv; S.mat.texts[i].corpo=nv; ta.focus(); try{ta.setSelectionRange(cs,ce);}catch(err){} matPreview(); break; }
+    case 'imgDel': { const im=S.mat.imgs[+b.dataset.i]; im.data=''; im.changed=true; render(); break; }
+    case 'matReload': run(()=>loadMat(S.matSpec)); break;
+    case 'matSave': run(async()=>{ const id=S.matSpec, m=S.mat; const ops=[]; const imagens=[];
+        m.imgs.forEach((im,i)=>{ const imgId=id+'_'+i; if(im.data&&validImg(im.data)){ if(im.changed) ops.push({col:'imagens',id:imgId,data:{data:im.data,espId:id,atualizadaEm:Date.now()}}); imagens.push({imgId,legenda:cleanLine(im.legenda,120)}); } else { if(im.imgId) ops.push({col:'imagens',id:im.imgId,del:true}); imagens.push({imgId:'',legenda:cleanLine(im.legenda,120)}); } });
+        for(const o of ops) { if(o.del) await api.del(o.col,o.id); else await api.set(o.col,o.id,o.data,false); }
+        await api.set('materiais',id,{espId:id,textos:m.texts.map(t=>({titulo:cleanLine(t.titulo,80),corpo:cleanBlock(t.corpo,2000)})),imagens,atualizadoEm:Date.now()},false);
+        await loadMat(id); toast('Material salvo!'); }); break;
+    case 'avToggle': { const x=S.avisos.find(v=>v.id===b.dataset.id); run(async()=>{ await api.set('avisos',x.id,{ativo:!x.ativo}); x.ativo=!x.ativo; }); break; }
+    case 'avDel': { const x=S.avisos.find(v=>v.id===b.dataset.id); ask('Excluir aviso?',x.titulo,'Excluir',()=>run(async()=>{ await api.del('avisos',x.id); S.avisos=S.avisos.filter(v=>v.id!==x.id); toast('Aviso excluído'); }),true); break; }
+    case 'asToggle': { const x=S.assocs.find(v=>v.id===b.dataset.id); run(async()=>{ const on=x.ativo===false; await api.set('associacoes',x.id,{ativo:on}); x.ativo=on; }); break; }
+    case 'export': { const inc=!!(document.getElementById('ex-img')||{}).checked; run(async()=>{ const specs=await api.list('especialidades'); const perguntas=await api.list('perguntas'); const materiais=await api.list('materiais'); const imagens=inc?await api.list('imagens'):[];
+        download('desbravaquiz-backup-'+new Date().toISOString().slice(0,10)+'.json', JSON.stringify({tipo:'desbravaquiz-backup',versao:1,exportadoEm:new Date().toISOString(),especialidades:specs,perguntas,materiais,imagens},null,1)); toast('Backup baixado'); }); break; }
+  }
+});
+app.addEventListener('input', e=>{ const t=e.target; lastAct=Date.now(); if(!S.mat) return;
+  if(t.dataset.mt!=null){ S.mat.texts[+t.dataset.mt].titulo=t.value; matPreview(); }
+  else if(t.dataset.mb!=null){ S.mat.texts[+t.dataset.mb].corpo=t.value; matPreview(); }
+  else if(t.dataset.mc!=null){ S.mat.imgs[+t.dataset.mc].legenda=t.value; matPreview(); } });
+app.addEventListener('keydown', e=>{ const t=e.target; if(t&&t.dataset&&t.dataset.mb!=null&&(e.ctrlKey||e.metaKey)&&(e.key==='b'||e.key==='B')){ e.preventDefault(); const btn=app.querySelector('[data-a="bold"][data-k="'+t.dataset.mb+'"]'); if(btn) btn.click(); } });
+app.addEventListener('change', e=>{ const t=e.target; lastAct=Date.now();
+  if(t.dataset.img!=null&&t.files&&t.files[0]){ const i=+t.dataset.img, f=t.files[0]; if(!/^image\/(png|jpeg|webp)$/.test(f.type)){ toast('Envie só PNG, JPG ou WEBP.'); return; } if(f.size>10*1024*1024){ toast('Imagem muito grande (máx. 10 MB).'); return; }
+    resizeImage(f).then(d=>{ const im=S.mat.imgs[i]; im.data=d; im.changed=true; render(); }).catch(()=>toast('Não consegui abrir essa imagem.')); return; }
+  if(t.dataset.import&&t.files&&t.files[0]){ const f=t.files[0]; t.value=''; f.text().then(txt=>importBackup(txt)).catch(()=>{ S.err='Não consegui ler o arquivo.'; render(); }); return; }
+  const k=t.dataset.ch;
+  if(k==='specArea'){ const e2=S.specEdit; const nm=document.getElementById('sp-n'); S.specEdit={...e2,nome:nm?nm.value:e2.nome,area:t.value,codigo:(e2.id&&String(e2.codigo).slice(0,2)===t.value)?e2.codigo:nextCode(t.value)}; S.err=''; render(); }
+  else if(k==='qSpec') run(()=>loadQs(t.value));
+  else if(k==='matSpec') run(()=>loadMat(t.value));
+});
+app.addEventListener('submit', e=>{ e.preventDefault(); lastAct=Date.now(); const f=e.target, fd=new FormData(f), kind=f.dataset.f;
+  if(kind==='login') return run(async()=>{ S.msg=''; await api.login(String(fd.get('em')).trim(),String(fd.get('pw'))); });
+  if(kind==='spec'){ const nome=cleanName(fd.get('nome'),60), area=AREAS_PADRAO[fd.get('area')]?fd.get('area'):'AR', codigo=cleanLine(fd.get('codigo'),6).toUpperCase(), e2=S.specEdit;
+    if(nome.length<3){ S.err='Nome inválido: use letras, números e espaços (mínimo 3).'; return render(); }
+    if(!/^[A-Z]{2}-\d{3}$/.test(codigo)||codigo.slice(0,2)!==area){ S.err='Código precisa ser '+area+'-000 (sugestão: '+nextCode(area)+').'; return render(); }
+    if(S.specs.some(s=>s.codigo===codigo&&s.id!==e2.id)){ S.err='Já existe uma especialidade com o código '+codigo+'.'; return render(); }
+    if(S.specs.some(s=>norm(s.nome)===norm(nome)&&s.id!==e2.id)){ S.err='Já existe uma especialidade com esse nome.'; return render(); }
+    const data={nome,area,codigo,paga:!!fd.get('paga'),publicada:!!fd.get('publicada'),atualizadaEm:Date.now()};
+    return run(async()=>{ if(e2.id){ await api.set('especialidades',e2.id,data); Object.assign(S.specs.find(s=>s.id===e2.id),data); } else { const id=codigo; await api.set('especialidades',id,{...data,nPerguntas:0,criadaEm:Date.now()},false); S.specs.push({id,...data,nPerguntas:0}); S.specs.sort((a,b)=>a.codigo.localeCompare(b.codigo)); } S.specEdit=null; toast('Especialidade salva'); });
+  }
+  if(kind==='q'){ const d={enunciado:cleanLine(fd.get('enunciado'),200),certa:cleanLine(fd.get('certa'),120),erradas:[cleanLine(fd.get('e1'),120),cleanLine(fd.get('e2'),120),cleanLine(fd.get('e3'),120)],explicacao:cleanLine(fd.get('explicacao'),300),dificuldade:['facil','media','dificil'].includes(fd.get('dificuldade'))?fd.get('dificuldade'):'facil'};
+    if(!d.enunciado||!d.certa||d.erradas.some(x=>!x)){ S.err='Preencha o enunciado e as 4 alternativas (texto puro).'; return render(); }
+    if(new Set([d.certa,...d.erradas].map(x=>x.toLowerCase())).size<4){ S.err='As 4 alternativas precisam ser diferentes.'; return render(); }
+    const qe=S.qEdit;
+    return run(async()=>{ if(qe){ await api.set('perguntas',qe.id,{...d,atualizadaEm:Date.now()}); Object.assign(qe,d); S.qEdit=null; toast('Pergunta atualizada'); } else { const id=await api.add('perguntas',{...d,espId:S.qSpec,criadaEm:Date.now()}); S.qs.push({id,...d,espId:S.qSpec}); f.reset(); toast('Pergunta salva'); } await recountSpec(S.qSpec); });
+  }
+  if(kind==='aviso'){ const ate=String(fd.get('ate')||''); const d={titulo:cleanLine(fd.get('titulo'),60),mensagem:cleanBlock(fd.get('mensagem'),400),tipo:fd.get('tipo')==='importante'?'importante':'info',ate:/^\d{4}-\d{2}-\d{2}$/.test(ate)?ate:'',ativo:true,criadoEm:Date.now()};
+    if(!d.titulo||!d.mensagem){ S.err='Preencha título e mensagem.'; return render(); }
+    return run(async()=>{ const id=await api.add('avisos',d); S.avisos.unshift({id,...d}); f.reset(); toast('Aviso publicado!'); });
+  }
+  if(kind==='assoc'){ const nome=cleanName(fd.get('nome'),60), sigla=cleanLine(fd.get('sigla'),8).replace(/[^A-Za-z]/g,''), uniao=String(fd.get('uniao'));
+    if(nome.length<5||sigla.length<2||!S.unioes.some(u=>u.id===uniao)){ toast('Preencha nome, sigla (letras) e união.'); return; }
+    if(S.assocs.some(a=>a.id===sigla)){ toast('Essa sigla já existe.'); return; }
+    const d={nome,sigla,tipo:/^miss/i.test(nome)?'Missão':'Associação',uniao,ativo:true};
+    return run(async()=>{ await api.set('associacoes',sigla,d,false); S.assocs.push({id:sigla,...d}); S.assocs.sort((a,b)=>a.nome.localeCompare(b.nome,'pt')); toast('Adicionada'); });
+  }
+});
+async function importBackup(txt){
+  let j; try{ j=JSON.parse(txt); }catch(e){ S.err='Arquivo inválido (não é JSON).'; return render(); }
+  if(!j||j.tipo!=='desbravaquiz-backup'||!Array.isArray(j.especialidades)){ S.err='Este arquivo não é um backup do DesbravaQuiz.'; return render(); }
+  const specs=j.especialidades.map(s=>({codigo:cleanLine(s.codigo,6).toUpperCase(),nome:cleanName(s.nome,60),area:AREAS_PADRAO[s.area]?s.area:'',paga:!!s.paga,publicada:!!s.publicada,oldId:String(s.id||'')})).filter(s=>/^[A-Z]{2}-\d{3}$/.test(s.codigo)&&s.area&&s.codigo.slice(0,2)===s.area&&s.nome.length>=3);
+  const idMap={}; specs.forEach(s=>{ idMap[s.oldId]=s.codigo; });
+  const qs=(j.perguntas||[]).map(q=>({espId:idMap[String(q.espId)],enunciado:cleanLine(q.enunciado,200),certa:cleanLine(q.certa,120),erradas:(Array.isArray(q.erradas)?q.erradas:[]).slice(0,3).map(x=>cleanLine(x,120)),explicacao:cleanLine(q.explicacao,300),dificuldade:['facil','media','dificil'].includes(q.dificuldade)?q.dificuldade:'facil',oldId:String(q.id||'')})).filter(q=>q.espId&&q.enunciado&&q.certa&&q.erradas.length===3&&q.erradas.every(Boolean));
+  const imgs=(j.imagens||[]).filter(i=>validImg(i.data)&&idMap[String(i.espId)]);
+  const mats=(j.materiais||[]).map(m=>({espId:idMap[String(m.espId||m.id)],textos:Array.from({length:N_TXT},(_,i)=>({titulo:cleanLine(((m.textos||[])[i]||{}).titulo,80),corpo:cleanBlock(((m.textos||[])[i]||{}).corpo,2000)})),imagens:Array.from({length:N_IMG},(_,i)=>{ const r=(m.imagens||[])[i]||{}; const has=imgs.some(x=>String(x.id)===String(r.imgId)); const keep=!!r.imgId; return {imgId:keep?idMap[String(m.espId||m.id)]+'_'+i:'',legenda:cleanLine(r.legenda,120),_old:has?String(r.imgId):''}; })})).filter(m=>m.espId);
+  ask('Importar backup?',`${specs.length} especialidade(s), ${qs.length} pergunta(s), ${mats.length} material(is) e ${imgs.length} imagem(ns) válidos serão gravados. Itens com o mesmo código são atualizados.`,'Importar',()=>run(async()=>{
+    const ops=[]; specs.forEach(s=>ops.push({col:'especialidades',id:s.codigo,data:{nome:s.nome,area:s.area,codigo:s.codigo,paga:s.paga,publicada:s.publicada,atualizadaEm:Date.now()}}));
+    const seen=new Set(); qs.forEach(q=>{ const id=(q.oldId&&!seen.has(q.oldId)&&/^[A-Za-z0-9_-]{6,40}$/.test(q.oldId))?q.oldId:null; if(id) seen.add(id); ops.push({col:'perguntas',id:id||('imp'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)),data:{espId:q.espId,enunciado:q.enunciado,certa:q.certa,erradas:q.erradas,explicacao:q.explicacao,dificuldade:q.dificuldade,criadaEm:Date.now()}}); });
+    mats.forEach(m=>{ m.imagens.forEach((r,i)=>{ if(r._old){ const src=imgs.find(x=>String(x.id)===r._old); ops.push({col:'imagens',id:r.imgId,data:{data:src.data,espId:m.espId,atualizadaEm:Date.now()}}); } delete r._old; }); ops.push({col:'materiais',id:m.espId,data:{espId:m.espId,textos:m.textos,imagens:m.imagens,atualizadoEm:Date.now()}}); });
+    await api.batch(ops); await loadAll(); for(const s of specs) await recountSpec(s.codigo); toast('Importação concluída!'); }));
+}
+
+// ---------- sessão: sai sozinho após 30 min sem uso ----------
+['mousemove','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,()=>{ lastAct=Date.now(); },{passive:true}));
+setInterval(()=>{ if(S.user&&Date.now()-lastAct>SESSION_MIN*60000){ api.logout(); S.msg='Sessão encerrada por inatividade.'; } },30000);
+
+// ---------- início ----------
+(async()=>{
+  render();
+  try{ await initApi(); }catch(e){ S.cfgErr = e.message==='config' ? 'Cole a configuração do app Web do Firebase no topo deste arquivo (const firebaseConfig).' : 'Não foi possível carregar o Firebase: '+e.message; return render(); }
+  api.onAuth(u=>{ S.user=u&&u.email?u:null; S.loaded=false; S.err=''; if(u&&u.email&&u.email!==ADMIN_EMAIL){ api.logout(); S.err='Esta conta não é de administrador.'; } render(); if(S.user) run(loadAll); });
+})();
+</script>
+</body>
+</html>
