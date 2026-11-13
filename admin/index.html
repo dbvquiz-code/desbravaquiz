@@ -62,7 +62,7 @@ main{flex:999 1 560px;min-width:0;padding:24px;display:flex;flex-direction:colum
 <div id="app"></div>
 <script type="module">
 // =====================================================================
-//  DesbravaQuiz · Painel do Administrador (Etapa 1 · v0.1)
+//  DesbravaQuiz · Painel do Administrador (Etapa 7 · v0.7)
 //  1) Cole abaixo a configuração do app Web do Firebase.
 //  2) Publique este arquivo no GitHub Pages.
 // =====================================================================
@@ -174,7 +174,7 @@ function vLogin(){
   </form></div>`;
 }
 function vNav(){
-  const T=[['inicio','Início'],['specs','Especialidades'],['qs','Perguntas'],['mat','Material de estudo'],['avisos','Avisos'],['geo','Uniões e associações'],['backup','Importar / Exportar'],['fb','Feedbacks']];
+  const T=[['inicio','Início'],['specs','Especialidades'],['qs','Perguntas'],['mat','Material de estudo'],['avisos','Avisos'],['geo','Uniões e associações'],['backup','Importar / Exportar'],['pts','Pontuação'],['fb','Feedbacks']];
   return `<nav class="side" aria-label="Menu do painel"><div style="padding:0 8px 14px"><div class="h" style="font-size:21px">DesbravaQuiz</div><div class="small" style="color:#B9D6C2">Painel do administrador${api&&api.mock?' · SIMULAÇÃO':''}</div></div>
     ${T.map(t=>`<button class="${S.tab===t[0]?'on':''}" data-a="tab" data-t="${t[0]}">${t[1]}</button>`).join('')}
     <button data-a="logout" style="margin-top:14px;border:1px solid rgba(255,255,255,.3)">Sair do painel</button></nav>`;
@@ -286,9 +286,32 @@ function vBackup(){
     <label class="btn btn-o" style="cursor:pointer;position:relative;align-self:flex-start">Escolher arquivo .json<input type="file" accept="application/json,.json" data-import="1" style="position:absolute;width:1px;height:1px;opacity:0"></label>
     ${S.err?`<div class="err">${esc(S.err)}</div>`:''}</div>`;
 }
+function vPts(){
+  return `<div><h1 class="h" style="font-size:30px">Pontuação</h1><div class="small muted">Zera os pontos de todos os desbravadores e de todos os clubes. Medalhas, sequências e caderno de erros continuam.</div></div>
+  <div class="card" style="padding:18px;display:flex;flex-direction:column;gap:10px">
+    <b class="h" style="font-size:20px">Zerar pontos da temporada</b>
+    <div class="small muted">Põe a pontuação da temporada em 0 para todos (perfis e clubes). O total geral continua.</div>
+    <div><button class="btn btn-r" data-a="zerarTemp" ${S.busy?'disabled':''}>Zerar pontos da temporada</button></div>
+  </div>
+  <div class="card" style="padding:18px;display:flex;flex-direction:column;gap:10px">
+    <b class="h" style="font-size:20px">Zerar todos os pontos</b>
+    <div class="small muted">Põe a temporada e o total geral em 0 para todos (perfis e clubes). Use só para recomeçar o app do zero.</div>
+    <div><button class="btn btn-r" data-a="zerarTudo" ${S.busy?'disabled':''}>Zerar todos os pontos</button></div>
+  </div>
+  ${S.ptsMsg?`<div class="card" style="padding:14px;background:#DDF0E2">${esc(S.ptsMsg)}</div>`:''}
+  ${S.err?`<div class="err">${esc(S.err)}</div>`:''}`;
+}
+async function zerarPontos(tudo){
+  const [perfis,clubes]=await Promise.all([api.list('perfis'),api.list('clubes')]);
+  const d=tudo?{ptsTemporada:0,ptsTotal:0}:{ptsTemporada:0};
+  const ops=[...perfis.map(p=>({col:'perfis',id:p.id,data:{...d,atualizadoEm:Date.now()}})),...clubes.map(c=>({col:'clubes',id:c.id,data:d}))];
+  await api.batch(ops);
+  S.ptsMsg=(tudo?'Todos os pontos foram zerados: ':'Pontos da temporada zerados: ')+perfis.length+' desbravador(es) e '+clubes.length+' clube(s).';
+  toast('Pontuação zerada');
+}
 function vFb(){
-  return `<div><h1 class="h" style="font-size:30px">Feedbacks</h1><div class="small muted">Mensagens enviadas pelo app (Ajustes e "Reportar erro"). Começam a chegar na Etapa 7.</div></div>
-  ${S.feedbacks.map(f=>`<div class="card" style="padding:14px;display:flex;flex-direction:column;gap:4px"><div class="row between wrap"><span class="pill" style="background:var(--areia)">${esc(f.tipo||'Feedback')}</span><span class="small muted">${esc(fmtDate(f.criadoEm))} · ${esc(f.codigo||'')}</span></div><div style="white-space:pre-line">${esc(f.texto)}</div></div>`).join('') || '<p class="muted">Nenhum feedback ainda.</p>'}`;
+  return `<div><h1 class="h" style="font-size:30px">Feedbacks</h1><div class="small muted">Mensagens enviadas pelo app (Ajustes e "Reportar erro"). Aparecem como texto puro.</div></div>
+  ${S.feedbacks.map(f=>`<div class="card" style="padding:14px;display:flex;flex-direction:column;gap:4px"><div class="row between wrap"><span class="pill" style="background:var(--areia)">${esc(f.tipo||'Feedback')}</span><span class="small muted">${esc(fmtDate(f.criadoEm))} · ${esc(f.codigo||'')}</span></div><div style="white-space:pre-line">${esc(f.texto)}</div><div><button class="btn btn-o" style="min-height:36px;font-size:13px" data-a="fbDel" data-id="${esc(f.id)}">Excluir</button></div></div>`).join('') || '<p class="muted">Nenhum feedback ainda.</p>'}`;
 }
 function vModal(){ const m=S.modal; if(!m) return '';
   return `<div class="modal-bg"><div class="modal" role="dialog" aria-modal="true"><h2 class="h" style="font-size:22px">${esc(m.title)}</h2><p class="p">${esc(m.text)}</p><div class="row wrap"><button class="btn ${m.danger?'btn-r':'btn-g'}" data-a="mOk">${esc(m.ok||'Confirmar')}</button><button class="btn btn-o" data-a="mNo">Cancelar</button></div></div></div>`; }
@@ -296,7 +319,7 @@ function render(){
   let h='';
   if(S.cfgErr) h=`<div style="padding:30px;max-width:640px;margin:auto"><h1 class="h">Falta configurar</h1><p class="p">${esc(S.cfgErr)}</p></div>`;
   else if(!S.user) h=vLogin();
-  else { const V={inicio:vInicio,specs:vSpecs,qs:vQs,mat:vMat,avisos:vAvisos,geo:vGeo,backup:vBackup,fb:vFb}[S.tab]; h=`<div class="layout">${vNav()}<main>${S.loaded?V():'<p class="muted">Carregando dados…</p>'}</main></div>`; }
+  else { const V={inicio:vInicio,specs:vSpecs,qs:vQs,mat:vMat,avisos:vAvisos,geo:vGeo,backup:vBackup,pts:vPts,fb:vFb}[S.tab]; h=`<div class="layout">${vNav()}<main>${S.loaded?V():'<p class="muted">Carregando dados…</p>'}</main></div>`; }
   h+=vModal(); if(S.toast) h+=`<div class="toast" role="status">${esc(S.toast)}</div>`; if(S.busy) h+='<div class="busy"></div>';
   const ae=document.activeElement, fid=ae&&ae.id, pos=ae&&ae.selectionStart;
   app.innerHTML=h;
@@ -346,6 +369,9 @@ app.addEventListener('click', e=>{
         await api.set('materiais',id,{espId:id,textos:m.texts.map(t=>({titulo:cleanLine(t.titulo,80),corpo:cleanBlock(t.corpo,2000)})),imagens,atualizadoEm:Date.now()},false);
         await loadMat(id); toast('Material salvo!'); }); break;
     case 'avToggle': { const x=S.avisos.find(v=>v.id===b.dataset.id); run(async()=>{ await api.set('avisos',x.id,{ativo:!x.ativo}); x.ativo=!x.ativo; }); break; }
+    case 'zerarTemp': ask('Zerar os pontos da temporada?','Todos os desbravadores e clubes ficam com 0 ponto na temporada. O total geral continua. Não pode ser desfeito.','Zerar temporada',()=>run(()=>zerarPontos(false)),true); break;
+    case 'zerarTudo': ask('Zerar TODOS os pontos?','Temporada e total geral de todos os desbravadores e clubes vão para 0. Não pode ser desfeito.','Zerar tudo',()=>run(()=>zerarPontos(true)),true); break;
+    case 'fbDel': { const x=S.feedbacks.find(v=>v.id===b.dataset.id); if(!x) break; ask('Excluir esta mensagem?',String(x.texto||'').slice(0,120),'Excluir',()=>run(async()=>{ await api.del('feedbacks',x.id); S.feedbacks=S.feedbacks.filter(v=>v.id!==x.id); toast('Mensagem excluída'); }),true); break; }
     case 'avDel': { const x=S.avisos.find(v=>v.id===b.dataset.id); ask('Excluir aviso?',x.titulo,'Excluir',()=>run(async()=>{ await api.del('avisos',x.id); S.avisos=S.avisos.filter(v=>v.id!==x.id); toast('Aviso excluído'); }),true); break; }
     case 'asToggle': { const x=S.assocs.find(v=>v.id===b.dataset.id); run(async()=>{ const on=x.ativo===false; await api.set('associacoes',x.id,{ativo:on}); x.ativo=on; }); break; }
     case 'export': { const inc=!!(document.getElementById('ex-img')||{}).checked; run(async()=>{ const specs=await api.list('especialidades'); const perguntas=await api.list('perguntas'); const materiais=await api.list('materiais'); const imagens=inc?await api.list('imagens'):[];
