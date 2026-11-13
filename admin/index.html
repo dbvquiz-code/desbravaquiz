@@ -114,6 +114,7 @@ async function initApi(){
       set:async(c,id,d,merge=true)=>{ col(c)[id]=merge?{...(col(c)[id]||{}),...d}:{...d}; },
       add:async(c,d)=>{ const id=Math.random().toString(36).slice(2,12); col(c)[id]={...d}; return id; },
       del:async(c,id)=>{ delete col(c)[id]; },
+      count:async(c,w)=>Object.values(col(c)).filter(d=>!w||d[w[0]]===w[1]).length,
       batch:async ops=>{ for(const o of ops){ if(o.del) delete col(o.col)[o.id]; else col(o.col)[o.id]={...(col(o.col)[o.id]||{}),...o.data}; } }
     };
     return;
@@ -131,6 +132,7 @@ async function initApi(){
     logout:()=>A.signOut(auth),
     resetPw:e=>A.sendPasswordResetEmail(auth,e),
     list:async(c,w)=>{ const q=w?F.query(F.collection(db,c),F.where(w[0],'==',w[1])):F.collection(db,c); const s=await F.getDocs(q); return s.docs.map(d=>({id:d.id,...d.data()})); },
+    count:async(c,w)=>{ const q=w?F.query(F.collection(db,c),F.where(w[0],'==',w[1])):F.collection(db,c); return (await F.getCountFromServer(q)).data().count; },
     get:async(c,id)=>{ const s=await F.getDoc(F.doc(db,c,id)); return s.exists()?{id:s.id,...s.data()}:null; },
     set:(c,id,d,merge=true)=>F.setDoc(F.doc(db,c,id),d,{merge}),
     add:async(c,d)=>(await F.addDoc(F.collection(db,c),d)).id,
@@ -179,7 +181,7 @@ function vLogin(){
   </form></div>`;
 }
 function vNav(){
-  const T=[['inicio','Início'],['specs','Especialidades'],['qs','Perguntas'],['mat','Material de estudo'],['avisos','Avisos'],['geo','Uniões e associações'],['backup','Importar / Exportar'],['pts','Pontuação'],['fb','Feedbacks']];
+  const T=[['inicio','Início'],['specs','Especialidades'],['qs','Perguntas'],['mat','Material de estudo'],['avisos','Avisos'],['geo','Uniões e associações'],['insc','Inscritos'],['backup','Importar / Exportar'],['pts','Pontuação'],['fb','Feedbacks']];
   return `<nav class="side" aria-label="Menu do painel"><div style="padding:0 8px 14px"><div class="h" style="font-size:21px">DesbravaQuiz</div><div class="small" style="color:#B9D6C2">Painel do administrador${api&&api.mock?' · SIMULAÇÃO':''}</div></div>
     ${T.map(t=>`<button class="${S.tab===t[0]?'on':''}" data-a="tab" data-t="${t[0]}">${t[1]}</button>`).join('')}
     <button data-a="logout" style="margin-top:14px;border:1px solid rgba(255,255,255,.3)">Sair do painel</button></nav>`;
@@ -301,6 +303,36 @@ function vGeo(){
           <div class="small muted">${i.c} clube(s) · ${i.d} desbravador(es) · <b style="color:${on?'var(--verde)':'var(--vermelho-txt)'}">${on?'Ativa':'Desativada'}</b></div></div>
         <button class="sw2 ${on?'on':''}" role="switch" aria-checked="${on}" aria-label="${on?'Desativar':'Ativar'} ${esc(a.nome)}" data-a="asToggle" data-id="${esc(a.id)}"></button></div>`; }).join('')}</div></div>`; }).join('') || '<p class="muted">Nada ainda. Use "Carregar dados iniciais" na tela Início.</p>'}</div>`;
 }
+async function contarInscritos(){
+  const [porAssoc,total,clubes]=await Promise.all([
+    Promise.all(S.assocs.map(a=>api.count('perfis',['assoc',a.id]).then(n=>[a.id,n]))),
+    api.count('perfis'), api.list('clubes')]);
+  S.clubes=clubes; S.insc={porAssoc:Object.fromEntries(porAssoc), total, quando:new Date()};
+}
+function linhasInsc(){
+  const pa=(S.insc&&S.insc.porAssoc)||{}, clubes=S.clubes||[];
+  return S.assocs.map(a=>{ const u=S.unioes.find(x=>x.id===a.uniao)||{}; return {uniao:u.sigla||a.uniao, uniaoNome:u.nome||a.uniao, nome:a.nome, sigla:a.sigla, ativa:a.ativo!==false, clubes:clubes.filter(c=>c.assoc===a.id).length, n:pa[a.id]||0}; });
+}
+function vInsc(){
+  if(!S.insc) return `<div><h1 class="h" style="font-size:30px">Inscritos por associação</h1><div class="small muted">Conta os perfis cadastrados no app em cada associação/missão.</div></div>
+    <div><button class="btn btn-g" data-a="inscAtualizar">Contar inscritos agora</button></div>`;
+  let rows=linhasInsc();
+  if(S.inscSo==='ativas') rows=rows.filter(r=>r.ativa); else if(S.inscSo==='com') rows=rows.filter(r=>r.n>0);
+  if(S.inscUniao) rows=rows.filter(r=>r.uniao===S.inscUniao);
+  rows.sort((a,b)=>b.n-a.n || a.nome.localeCompare(b.nome,'pt'));
+  const soma=rows.reduce((n,r)=>n+r.n,0);
+  const porUniao=S.unioes.map(u=>({u, n:linhasInsc().filter(r=>r.uniao===(u.sigla||u.id)).reduce((t,r)=>t+r.n,0)}));
+  return `<div class="row between wrap"><div><h1 class="h" style="font-size:30px">Inscritos por associação</h1>
+    <div class="small muted">Contagem feita às ${esc(S.insc.quando.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}))} · ${S.insc.total} desbravador(es) no app</div></div>
+    <div class="row wrap"><button class="btn btn-o" data-a="inscAtualizar">Atualizar</button><button class="btn btn-g" data-a="inscCsv">Baixar planilha (CSV)</button></div></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px">${porUniao.map(x=>`<button class="card" style="padding:12px;text-align:left;cursor:pointer;${S.inscUniao===(x.u.sigla||x.u.id)?'outline:3px solid var(--amarelo)':''}" data-a="inscUniao" data-id="${esc(x.u.sigla||x.u.id)}"><div class="small muted" style="font-weight:800">${esc(x.u.sigla||x.u.id)}</div><div class="h" style="font-size:26px;color:var(--verde)">${x.n}</div></button>`).join('')}</div>
+  <div class="row wrap" style="gap:8px">${[['todas','Todas'],['ativas','Só ativas'],['com','Só com inscritos']].map(f=>`<button class="chip" style="${(S.inscSo||'todas')===f[0]?'background:var(--verde);color:#fff':''}" data-a="inscSo" data-f="${f[0]}">${f[1]}</button>`).join('')}${S.inscUniao?`<button class="chip" data-a="inscUniao" data-id="">União: ${esc(S.inscUniao)} ✕</button>`:''}</div>
+  <div class="card" style="padding:0;overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:14px">
+    <thead><tr style="background:var(--areia);text-align:left"><th style="padding:10px">Associação / missão</th><th style="padding:10px">União</th><th style="padding:10px">Situação</th><th style="padding:10px;text-align:right">Clubes</th><th style="padding:10px;text-align:right">Inscritos</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr style="border-top:1px solid var(--borda)"><td style="padding:9px 10px;font-weight:700">${esc(r.nome)} <span class="muted small">(${esc(r.sigla)})</span></td><td style="padding:9px 10px">${esc(r.uniao)}</td><td style="padding:9px 10px;font-weight:800;color:${r.ativa?'var(--verde)':'var(--vermelho-txt)'}">${r.ativa?'Ativa':'Desativada'}</td><td style="padding:9px 10px;text-align:right">${r.clubes}</td><td style="padding:9px 10px;text-align:right;font-weight:800;font-size:16px">${r.n}</td></tr>`).join('')}</tbody>
+    <tfoot><tr style="border-top:2px solid var(--borda);background:#F3F0E6"><td style="padding:10px;font-weight:800" colspan="4">Total (${rows.length} associação(ões)/missão(ões) na lista)</td><td style="padding:10px;text-align:right;font-weight:800;font-size:16px">${soma}</td></tr></tfoot>
+  </table></div>`;
+}
 function vBackup(){
   return `<div><h1 class="h" style="font-size:30px">Importar / Exportar</h1><div class="small muted">Cópia de segurança das especialidades, perguntas e materiais em arquivo .json. A importação por planilha (CSV) vem numa próxima versão.</div></div>
   <div class="card" style="padding:18px;display:flex;flex-direction:column;gap:10px"><h2 class="h" style="font-size:20px">Exportar</h2>
@@ -344,7 +376,7 @@ function render(){
   let h='';
   if(S.cfgErr) h=`<div style="padding:30px;max-width:640px;margin:auto"><h1 class="h">Falta configurar</h1><p class="p">${esc(S.cfgErr)}</p></div>`;
   else if(!S.user) h=vLogin();
-  else { const V={inicio:vInicio,specs:vSpecs,qs:vQs,mat:vMat,avisos:vAvisos,geo:vGeo,backup:vBackup,pts:vPts,fb:vFb}[S.tab]; h=`<div class="layout">${vNav()}<main>${S.loaded?V():'<p class="muted">Carregando dados…</p>'}</main></div>`; }
+  else { const V={inicio:vInicio,specs:vSpecs,qs:vQs,mat:vMat,avisos:vAvisos,geo:vGeo,insc:vInsc,backup:vBackup,pts:vPts,fb:vFb}[S.tab]; h=`<div class="layout">${vNav()}<main>${S.loaded?V():'<p class="muted">Carregando dados…</p>'}</main></div>`; }
   h+=vModal(); if(S.toast) h+=`<div class="toast" role="status">${esc(S.toast)}</div>`; if(S.busy) h+='<div class="busy"></div>';
   const ae=document.activeElement, fid=ae&&ae.id, pos=ae&&ae.selectionStart;
   app.innerHTML=h;
@@ -364,7 +396,7 @@ function download(name,text){ const a=document.createElement('a'); a.href=URL.cr
 app.addEventListener('click', e=>{
   const b=e.target.closest('[data-a]'); if(!b||b.disabled) return; const a=b.dataset.a; lastAct=Date.now();
   switch(a){
-    case 'tab': S.tab=b.dataset.t; S.err=''; render(); if(S.tab==='qs'&&S.qSpec) run(()=>loadQs(S.qSpec)); if(S.tab==='mat'&&S.matSpec&&!S.mat) run(()=>loadMat(S.matSpec)); break;
+    case 'tab': S.tab=b.dataset.t; S.err=''; render(); if(S.tab==='insc'&&!S.insc) run(contarInscritos); if(S.tab==='qs'&&S.qSpec) run(()=>loadQs(S.qSpec)); if(S.tab==='mat'&&S.matSpec&&!S.mat) run(()=>loadMat(S.matSpec)); break;
     case 'logout': api.logout(); break;
     case 'reset': { const em=(document.getElementById('em')||{}).value||ADMIN_EMAIL; run(async()=>{ await api.resetPw(em); S.msg='Enviamos um e-mail para redefinir a senha.'; }); break; }
     case 'mOk': { const m=S.modal; S.modal=null; render(); if(m&&m.fn) m.fn(); break; }
@@ -405,6 +437,11 @@ app.addEventListener('click', e=>{
     case 'geoTodas': { const on=b.dataset.on==='1'; const alvo=S.assocs.filter(a=>(a.ativo!==false)!==on);
       if(!alvo.length){ toast('Nada para mudar'); break; }
       ask((on?'Ativar':'Desativar')+' todas as associações/missões?',alvo.length+' serão '+(on?'ativadas':'desativadas')+'. Quem já está cadastrado continua usando o app.','Confirmar',()=>run(async()=>{ await api.batch(alvo.map(a=>({col:'associacoes',id:a.id,data:{ativo:on}}))); alvo.forEach(a=>a.ativo=on); toast('Pronto'); }),!on); break; }
+    case 'inscAtualizar': run(contarInscritos); break;
+    case 'inscSo': S.inscSo=b.dataset.f; render(); break;
+    case 'inscUniao': S.inscUniao=b.dataset.id||''; render(); break;
+    case 'inscCsv': { const q=v=>'"'+String(v).replace(/"/g,'""')+'"'; const linhas=[['Associação/Missão','Sigla','União','Situação','Clubes','Inscritos'].map(q).join(';')].concat(linhasInsc().sort((a,b)=>b.n-a.n).map(r=>[r.nome,r.sigla,r.uniaoNome,r.ativa?'Ativa':'Desativada',r.clubes,r.n].map(q).join(';')));
+      const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+linhas.join('\r\n')],{type:'text/csv;charset=utf-8'})); a.download='desbravaquiz-inscritos-'+new Date().toISOString().slice(0,10)+'.csv'; document.body.appendChild(a); a.click(); a.remove(); break; }
     case 'asToggle': { const x=S.assocs.find(v=>v.id===b.dataset.id); if(!x) break; const on=x.ativo===false; run(async()=>{ await api.set('associacoes',x.id,{ativo:on}); x.ativo=on; toast((on?'Ativada: ':'Desativada: ')+x.nome); }); break; }
     case 'export': { const inc=!!(document.getElementById('ex-img')||{}).checked; run(async()=>{ const specs=await api.list('especialidades'); const perguntas=await api.list('perguntas'); const materiais=await api.list('materiais'); const imagens=inc?await api.list('imagens'):[];
         download('desbravaquiz-backup-'+new Date().toISOString().slice(0,10)+'.json', JSON.stringify({tipo:'desbravaquiz-backup',versao:1,exportadoEm:new Date().toISOString(),especialidades:specs,perguntas,materiais,imagens},null,1)); toast('Backup baixado'); }); break; }
