@@ -27,6 +27,10 @@ button{cursor:pointer}
 .btn-r{background:var(--vermelho);color:#fff}
 .btn-ro{background:#fff;border:2px solid var(--vermelho);color:var(--vermelho-txt)}
 .btn[disabled]{opacity:.5;cursor:not-allowed}
+.sw2{position:relative;width:52px;height:30px;border-radius:999px;border:0;background:#C9C3B0;flex-shrink:0;cursor:pointer;transition:background .15s}
+.sw2::after{content:'';position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .15s}
+.sw2.on{background:var(--verde)}.sw2.on::after{left:25px}
+.sw2:focus-visible{outline:3px solid var(--amarelo);outline-offset:2px}
 .chip{border:0;border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:800;background:var(--areia)}
 .pill{border-radius:999px;padding:4px 10px;font-size:12px;font-weight:800;display:inline-block}
 .card{background:#fff;border:1px solid var(--borda);border-radius:16px}
@@ -151,6 +155,7 @@ async function loadAll(){
   S.unioes=unioes.sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt'));
   S.assocs=assocs.sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt'));
   S.avisos=avisos.sort((a,b)=>(b.criadoEm||0)-(a.criadoEm||0));
+  try{ S.clubes=await api.list('clubes'); }catch(e){ S.clubes=[]; }
   try{ S.feedbacks=(await api.list('feedbacks')).sort((a,b)=>(b.criadoEm||0)-(a.criadoEm||0)); }catch(e){ S.feedbacks=[]; }
   S.loaded=true;
 }
@@ -267,14 +272,34 @@ function vAvisos(){
   ${S.avisos.map(a=>`<div class="card" style="padding:14px;display:flex;flex-direction:column;gap:6px;${a.ativo?'':'opacity:.6'}"><div class="row between wrap"><span class="row"><span class="pill" style="background:${a.tipo==='importante'?'#FBE0DD':'#DCEBFB'};color:${a.tipo==='importante'?'var(--vermelho-txt)':'#1A5AA6'}">${a.tipo==='importante'?'Importante':'Informação'}</span><b>${esc(a.titulo)}</b></span><span class="small muted">${esc(fmtDate(a.criadoEm))}${a.ate?' · até '+esc(a.ate.split('-').reverse().join('/')):''}</span></div><div style="white-space:pre-line">${esc(a.mensagem)}</div><div class="row"><button class="chip" data-a="avToggle" data-id="${esc(a.id)}">${a.ativo?'Desativar':'Reativar'}</button><button class="chip" style="background:#FBE0DD;color:var(--vermelho-txt)" data-a="avDel" data-id="${esc(a.id)}">Excluir</button></div></div>`).join('') || '<p class="muted">Nenhum aviso publicado.</p>'}`;
 }
 function vGeo(){
-  return `<div class="row between wrap"><div><h1 class="h" style="font-size:30px">Uniões e associações/missões</h1><div class="small muted">${S.unioes.length} uniões · ${S.assocs.length} associações/missões. Desativar esconde do cadastro sem apagar.</div></div></div>
+  const clubes=S.clubes||[];
+  const info=id=>{ const cs=clubes.filter(c=>c.assoc===id); return {c:cs.length, d:cs.reduce((n,c)=>n+(+c.membros||0),0)}; };
+  const ativas=S.assocs.filter(a=>a.ativo!==false).length;
+  const q=norm(S.geoBusca||'');
+  return `<div class="row between wrap"><div><h1 class="h" style="font-size:30px">Uniões e associações/missões</h1>
+    <div class="small muted">${ativas} de ${S.assocs.length} associações/missões ativas · ${clubes.length} clubes · ${clubes.reduce((n,c)=>n+(+c.membros||0),0)} desbravadores cadastrados</div></div>
+    <div class="row wrap"><button class="btn btn-o" data-a="geoTodas" data-on="1">Ativar todas</button><button class="btn btn-ro" data-a="geoTodas" data-on="0">Desativar todas</button></div></div>
+  <div class="card small" style="padding:12px 14px;background:#FFF3C9;border-color:#F1D98A"><b>Como funciona:</b> associação ou união <b>desativada</b> some da lista de cadastro do app (ninguém novo entra por ela). Quem já está cadastrado continua usando normalmente.</div>
+  <div class="row wrap" style="gap:10px"><input class="inp" style="flex:1 1 260px" data-in="geoBusca" value="${esc(S.geoBusca||'')}" placeholder="Buscar associação, missão ou sigla" aria-label="Buscar"></div>
   <form class="card" data-f="assoc" style="padding:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
     <div class="field" style="flex:2 1 220px"><label for="as-n">Nova associação ou missão</label><input id="as-n" name="nome" class="inp" maxlength="60" placeholder="Ex.: Missão ..." required></div>
     <div class="field" style="flex:1 1 110px"><label for="as-s">Sigla</label><input id="as-s" name="sigla" class="inp" maxlength="8" required></div>
     <div class="field" style="flex:2 1 220px"><label for="as-u">União</label><select id="as-u" name="uniao" class="inp" required>${S.unioes.map(u=>`<option value="${esc(u.id)}">${esc(u.nome)}</option>`).join('')}</select></div>
     <button class="btn btn-g" type="submit">Adicionar</button>
   </form>
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">${S.unioes.map(u=>`<div class="card" style="padding:14px"><b>${esc(u.nome)} (${esc(u.sigla)})</b><div class="small muted">${esc(u.estados||'')}</div><div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">${S.assocs.filter(a=>a.uniao===u.id).map(a=>`<div class="row between small" style="${a.ativo===false?'opacity:.5;text-decoration:line-through':''}"><span>${esc(a.nome)} <span class="muted">(${esc(a.sigla)})</span></span><button class="chip" style="padding:3px 8px" data-a="asToggle" data-id="${esc(a.id)}">${a.ativo===false?'Ativar':'Desativar'}</button></div>`).join('')}</div></div>`).join('') || '<p class="muted">Nada ainda. Use "Carregar dados iniciais" na tela Início.</p>'}</div>`;
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px">${S.unioes.map(u=>{
+    const lista=S.assocs.filter(a=>a.uniao===u.id && (!q || norm(a.nome).includes(q) || norm(a.sigla||'').includes(q)));
+    if(q && !lista.length) return '';
+    const todas=S.assocs.filter(a=>a.uniao===u.id), on=todas.filter(a=>a.ativo!==false).length, uOn=u.ativo!==false;
+    return `<div class="card" style="padding:14px;${uOn?'':'background:#F3F0E6'}">
+      <div class="row between" style="gap:10px;align-items:flex-start"><div><b style="font-size:16px">${esc(u.nome)} (${esc(u.sigla)})</b><div class="small muted">${esc(u.estados||'')}</div>
+        <div class="small" style="font-weight:800;color:${uOn?'var(--verde)':'var(--vermelho-txt)'}">${uOn?'União ativa':'União desativada (some do cadastro)'} · ${on}/${todas.length} ativas</div></div>
+        <button class="sw2 ${uOn?'on':''}" role="switch" aria-checked="${uOn}" aria-label="${uOn?'Desativar':'Ativar'} ${esc(u.nome)}" data-a="unToggle" data-id="${esc(u.id)}"></button></div>
+      <div class="row wrap" style="gap:6px;margin-top:8px"><button class="chip" data-a="geoUniao" data-id="${esc(u.id)}" data-on="1">Ativar todas da união</button><button class="chip" data-a="geoUniao" data-id="${esc(u.id)}" data-on="0">Desativar todas da união</button></div>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:2px">${lista.map(a=>{ const on=a.ativo!==false, i=info(a.id); return `<div class="row between" style="gap:10px;padding:8px 6px;border-top:1px solid var(--borda)">
+        <div style="min-width:0;${on?'':'opacity:.55'}"><div style="font-weight:700">${esc(a.nome)} <span class="muted small">(${esc(a.sigla)})</span></div>
+          <div class="small muted">${i.c} clube(s) · ${i.d} desbravador(es) · <b style="color:${on?'var(--verde)':'var(--vermelho-txt)'}">${on?'Ativa':'Desativada'}</b></div></div>
+        <button class="sw2 ${on?'on':''}" role="switch" aria-checked="${on}" aria-label="${on?'Desativar':'Ativar'} ${esc(a.nome)}" data-a="asToggle" data-id="${esc(a.id)}"></button></div>`; }).join('')}</div></div>`; }).join('') || '<p class="muted">Nada ainda. Use "Carregar dados iniciais" na tela Início.</p>'}</div>`;
 }
 function vBackup(){
   return `<div><h1 class="h" style="font-size:30px">Importar / Exportar</h1><div class="small muted">Cópia de segurança das especialidades, perguntas e materiais em arquivo .json. A importação por planilha (CSV) vem numa próxima versão.</div></div>
@@ -373,12 +398,21 @@ app.addEventListener('click', e=>{
     case 'zerarTudo': ask('Zerar TODOS os pontos?','Temporada e total geral de todos os desbravadores e clubes vão para 0. Não pode ser desfeito.','Zerar tudo',()=>run(()=>zerarPontos(true)),true); break;
     case 'fbDel': { const x=S.feedbacks.find(v=>v.id===b.dataset.id); if(!x) break; ask('Excluir esta mensagem?',String(x.texto||'').slice(0,120),'Excluir',()=>run(async()=>{ await api.del('feedbacks',x.id); S.feedbacks=S.feedbacks.filter(v=>v.id!==x.id); toast('Mensagem excluída'); }),true); break; }
     case 'avDel': { const x=S.avisos.find(v=>v.id===b.dataset.id); ask('Excluir aviso?',x.titulo,'Excluir',()=>run(async()=>{ await api.del('avisos',x.id); S.avisos=S.avisos.filter(v=>v.id!==x.id); toast('Aviso excluído'); }),true); break; }
-    case 'asToggle': { const x=S.assocs.find(v=>v.id===b.dataset.id); run(async()=>{ const on=x.ativo===false; await api.set('associacoes',x.id,{ativo:on}); x.ativo=on; }); break; }
+    case 'unToggle': { const x=S.unioes.find(v=>v.id===b.dataset.id); if(!x) break; const on=x.ativo===false; run(async()=>{ await api.set('unioes',x.id,{ativo:on}); x.ativo=on; toast(on?'União ativada':'União desativada'); }); break; }
+    case 'geoUniao': { const u=S.unioes.find(v=>v.id===b.dataset.id); if(!u) break; const on=b.dataset.on==='1'; const alvo=S.assocs.filter(a=>a.uniao===u.id&&(a.ativo!==false)!==on);
+      if(!alvo.length){ toast('Nada para mudar'); break; }
+      ask((on?'Ativar':'Desativar')+' '+alvo.length+' associação(ões)/missão(ões)?','Da '+u.nome+'.','Confirmar',()=>run(async()=>{ await api.batch(alvo.map(a=>({col:'associacoes',id:a.id,data:{ativo:on}}))); alvo.forEach(a=>a.ativo=on); toast('Pronto'); }),!on); break; }
+    case 'geoTodas': { const on=b.dataset.on==='1'; const alvo=S.assocs.filter(a=>(a.ativo!==false)!==on);
+      if(!alvo.length){ toast('Nada para mudar'); break; }
+      ask((on?'Ativar':'Desativar')+' todas as associações/missões?',alvo.length+' serão '+(on?'ativadas':'desativadas')+'. Quem já está cadastrado continua usando o app.','Confirmar',()=>run(async()=>{ await api.batch(alvo.map(a=>({col:'associacoes',id:a.id,data:{ativo:on}}))); alvo.forEach(a=>a.ativo=on); toast('Pronto'); }),!on); break; }
+    case 'asToggle': { const x=S.assocs.find(v=>v.id===b.dataset.id); if(!x) break; const on=x.ativo===false; run(async()=>{ await api.set('associacoes',x.id,{ativo:on}); x.ativo=on; toast((on?'Ativada: ':'Desativada: ')+x.nome); }); break; }
     case 'export': { const inc=!!(document.getElementById('ex-img')||{}).checked; run(async()=>{ const specs=await api.list('especialidades'); const perguntas=await api.list('perguntas'); const materiais=await api.list('materiais'); const imagens=inc?await api.list('imagens'):[];
         download('desbravaquiz-backup-'+new Date().toISOString().slice(0,10)+'.json', JSON.stringify({tipo:'desbravaquiz-backup',versao:1,exportadoEm:new Date().toISOString(),especialidades:specs,perguntas,materiais,imagens},null,1)); toast('Backup baixado'); }); break; }
   }
 });
-app.addEventListener('input', e=>{ const t=e.target; lastAct=Date.now(); if(!S.mat) return;
+app.addEventListener('input', e=>{ const t=e.target; lastAct=Date.now();
+  if(t.dataset.in==='geoBusca'){ S.geoBusca=t.value.slice(0,40); const pos=t.selectionStart; render(); const n=document.querySelector('[data-in="geoBusca"]'); if(n){ n.focus(); try{ n.setSelectionRange(pos,pos); }catch(_){} } return; }
+  if(!S.mat) return;
   if(t.dataset.mt!=null){ S.mat.texts[+t.dataset.mt].titulo=t.value; matPreview(); }
   else if(t.dataset.mb!=null){ S.mat.texts[+t.dataset.mb].corpo=t.value; matPreview(); }
   else if(t.dataset.mc!=null){ S.mat.imgs[+t.dataset.mc].legenda=t.value; matPreview(); } });
