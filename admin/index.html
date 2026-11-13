@@ -93,7 +93,7 @@ const cleanName=(v,max)=>cleanLine(v,max).replace(/[^\p{L}\p{N} .'\-]/gu,'').rep
 const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
 const rich=t=>esc(t).replace(/\*\*(.+?)\*\*/gs,'<strong>$1</strong>').split(/\n{2,}/).map(p=>'<p class="p">'+p.replace(/\n/g,'<br>')+'</p>').join('');
 const fmtDate=ms=>ms?new Date(ms).toLocaleString('pt-BR'):'';
-const N_TXT=6, N_IMG=5;
+const N_TXT=6, N_IMG=6;
 const AREAS_PADRAO={AD:['ADRA','#1E3A8A'],HM:['Artes e Habilidades Manuais','#5BB4EC'],AA:['Atividades Agrícolas','#7A4A1E'],AM:['Atividades Missionárias e Comunitárias','#14275C'],EB:['Ensinos Bíblicos','#14275C'],AP:['Atividades Profissionais','#C62828'],AR:['Atividades Recreativas','#2E7A4E'],CS:['Ciência e Saúde','#6B3FA0'],EN:['Estudos da Natureza','#5F6B66'],HD:['Habilidades Domésticas','#FFC531']};
 const areaNome=k=>(AREAS_PADRAO[k]||[k])[0], areaCor=k=>(AREAS_PADRAO[k]||[0,'#5F6B66'])[1], areaFg=k=>k==='HD'||k==='HM'?'#1B2A20':'#fff';
 
@@ -244,19 +244,26 @@ function vQs(){
     ${S.qs.map((q,i)=>`<tr style="${qe&&qe.id===q.id?'background:#FFFBEA':''}"><td>${i+1}</td><td>${esc(q.enunciado)}</td><td style="color:var(--verde);font-weight:700">${esc(q.certa)}</td><td class="small muted">${(q.erradas||[]).map(esc).join(' · ')}</td><td style="white-space:nowrap"><button class="chip" data-a="qEdit" data-id="${esc(q.id)}">Editar</button> <button class="chip" style="background:#FBE0DD;color:var(--vermelho-txt)" data-a="qDelAsk" data-id="${esc(q.id)}">Excluir</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted">Nenhuma pergunta ainda.</td></tr>'}
   </tbody></table></div>`:'<p class="muted">Escolha uma especialidade para ver e cadastrar perguntas.</p>'}`;
 }
-function blocksHtml(m){ const out=[]; for(let i=0;i<N_TXT;i++){ const t=m.texts[i]; if(t&&(t.titulo||t.corpo)) out.push((t.titulo?`<h3 class="h" style="font-size:19px">${esc(t.titulo)}</h3>`:'')+(t.corpo?rich(t.corpo):'')); const im=m.imgs[i]; if(i<N_IMG&&im&&im.data) out.push(`<figure style="margin:0;display:flex;flex-direction:column;gap:6px"><img src="${esc(im.data)}" alt="${esc(im.legenda||'Imagem')}" style="width:100%;border-radius:12px">${im.legenda?`<figcaption class="small muted" style="text-align:center">${esc(im.legenda)}</figcaption>`:''}</figure>`); } return out.join('')||'<p class="muted">Nada para mostrar ainda.</p>'; }
+function blocksHtml(m){ const out=[]; for(let i=0;i<N_TXT;i++){ const t=m.texts[i]||{}, im=m.imgs[i];
+  const part=[]; if(t.titulo) part.push(`<h3 class="h" style="font-size:19px">${esc(t.titulo)}</h3>`);
+  if(im&&im.data) part.push(`<figure style="margin:0;display:flex;flex-direction:column;gap:6px"><img src="${esc(im.data)}" alt="${esc(im.legenda||'Imagem')}" style="width:100%;border-radius:12px">${im.legenda?`<figcaption class="small muted" style="text-align:center">${esc(im.legenda)}</figcaption>`:''}</figure>`);
+  if(t.corpo) part.push(rich(t.corpo));
+  if(part.length) out.push(`<div style="display:flex;flex-direction:column;gap:8px">${part.join('')}</div>`); }
+  return out.join('')||'<p class="muted">Nada para mostrar ainda.</p>'; }
 function vMat(){
   const sp=S.specs.find(s=>s.id===S.matSpec); const m=S.mat; const parts=[];
-  if(sp&&m){ for(let i=0;i<N_TXT;i++){ const t=m.texts[i];
-      parts.push(`<div class="card" style="padding:14px;display:flex;flex-direction:column;gap:8px"><div class="row between"><span class="pill" style="background:#DCEBFB;color:#1A5AA6">Texto ${i+1}</span><button type="button" class="chip" style="background:var(--tinta);color:#fff;font-weight:900;min-width:44px;min-height:36px" data-a="bold" data-k="${i}" title="Negrito (Ctrl+B)">B</button></div>
-      <div class="field"><label for="mt-${i}">Subtítulo (opcional)</label><input id="mt-${i}" class="inp" data-mt="${i}" maxlength="80" value="${esc(t.titulo)}"></div>
-      <div class="field"><label for="mb-${i}">Texto</label><textarea id="mb-${i}" class="inp" data-mb="${i}" maxlength="2000">${esc(t.corpo)}</textarea></div></div>`);
-      if(i<N_IMG){ const im=m.imgs[i];
-        parts.push(`<div class="card" style="padding:14px;display:flex;flex-direction:column;gap:8px;background:#FFFDF6"><span class="pill" style="align-self:flex-start;background:#FFE8D6;color:#9A3D0A">Imagem ${i+1}</span>
+  if(sp&&m){ for(let i=0;i<N_TXT;i++){ const t=m.texts[i], im=m.imgs[i];
+      parts.push(`<div class="card" style="padding:14px;display:flex;flex-direction:column;gap:10px">
+      <div class="row between"><span class="pill" style="background:#DCEBFB;color:#1A5AA6">Parte ${i+1}</span><button type="button" class="chip" style="background:var(--tinta);color:#fff;font-weight:900;min-width:44px;min-height:36px" data-a="bold" data-k="${i}" title="Negrito no texto (Ctrl+B)">B</button></div>
+      <div class="field"><label for="mt-${i}">1. Título (opcional)</label><input id="mt-${i}" class="inp" data-mt="${i}" maxlength="80" value="${esc(t.titulo)}"></div>
+      <div style="display:flex;flex-direction:column;gap:8px;background:#FFFDF6;border:1px dashed var(--borda);border-radius:12px;padding:10px">
+        <b class="small">2. Imagem (opcional)</b>
         ${im.data?`<img src="${esc(im.data)}" alt="" style="max-width:260px;width:100%;border-radius:12px">`:`<div class="imgph">Sem imagem (não aparece no app)</div>`}
         <div class="row wrap"><label class="btn btn-o" style="cursor:pointer;position:relative">${im.data?'Trocar imagem':'Escolher imagem'}<input type="file" accept="image/png,image/jpeg,image/webp" data-img="${i}" style="position:absolute;width:1px;height:1px;opacity:0"></label>${im.data?`<button type="button" class="btn btn-ro" data-a="imgDel" data-i="${i}">Remover</button>`:''}</div>
-        <div class="field"><label for="mc-${i}">Legenda (opcional)</label><input id="mc-${i}" class="inp" data-mc="${i}" maxlength="120" value="${esc(im.legenda)}"></div></div>`); } } }
-  return `<div><h1 class="h" style="font-size:30px">Material de estudo</h1><div class="small muted">Ordem fixa: 6 textos intercalados com 5 imagens. Textos vazios e imagens não enviadas não aparecem no app. Negrito: selecione o trecho e toque em B (ou Ctrl+B).</div></div>
+        <div class="field"><label for="mc-${i}">Legenda (opcional)</label><input id="mc-${i}" class="inp" data-mc="${i}" maxlength="120" value="${esc(im.legenda)}"></div>
+      </div>
+      <div class="field"><label for="mb-${i}">3. Texto</label><textarea id="mb-${i}" class="inp" data-mb="${i}" maxlength="2000">${esc(t.corpo)}</textarea></div></div>`); } }
+  return `<div><h1 class="h" style="font-size:30px">Material de estudo</h1><div class="small muted">Até 6 partes. Cada parte aparece no app nesta ordem: título, imagem e texto. Campos vazios e imagens não enviadas não aparecem. Negrito: selecione o trecho e toque em B (ou Ctrl+B).</div></div>
   <div class="field" style="max-width:420px"><label for="m-sp">Especialidade</label><select id="m-sp" class="inp" data-ch="matSpec">${specOptions(S.matSpec)}</select></div>
   ${sp&&m?`<div class="grid2"><div style="flex:999 1 420px;min-width:0;display:flex;flex-direction:column;gap:10px">${parts.join('')}
     ${S.err?`<div class="err">${esc(S.err)}</div>`:''}
