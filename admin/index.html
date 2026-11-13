@@ -181,7 +181,7 @@ function vLogin(){
   </form></div>`;
 }
 function vNav(){
-  const T=[['inicio','Início'],['specs','Especialidades'],['qs','Perguntas'],['mat','Material de estudo'],['avisos','Avisos'],['geo','Uniões e associações'],['insc','Inscritos'],['backup','Importar / Exportar'],['pts','Pontuação'],['fb','Feedbacks']];
+  const T=[['inicio','Início'],['specs','Especialidades'],['qs','Perguntas'],['mat','Material de estudo'],['avisos','Avisos'],['geo','Uniões e associações'],['insc','Inscritos'],['part','Participantes'],['backup','Importar / Exportar'],['pts','Pontuação'],['fb','Feedbacks']];
   return `<nav class="side" aria-label="Menu do painel"><div style="padding:0 8px 14px"><div class="h" style="font-size:21px">DesbravaQuiz</div><div class="small" style="color:#B9D6C2">Painel do administrador${api&&api.mock?' · SIMULAÇÃO':''}</div></div>
     ${T.map(t=>`<button class="${S.tab===t[0]?'on':''}" data-a="tab" data-t="${t[0]}">${t[1]}</button>`).join('')}
     <button data-a="logout" style="margin-top:14px;border:1px solid rgba(255,255,255,.3)">Sair do painel</button></nav>`;
@@ -333,6 +333,46 @@ function vInsc(){
     <tfoot><tr style="border-top:2px solid var(--borda);background:#F3F0E6"><td style="padding:10px;font-weight:800" colspan="4">Total (${rows.length} associação(ões)/missão(ões) na lista)</td><td style="padding:10px;text-align:right;font-weight:800;font-size:16px">${soma}</td></tr></tfoot>
   </table></div>`;
 }
+async function buscarPart(){
+  const cod=String(S.partCod||'').trim().toUpperCase();
+  let lista;
+  if(cod){
+    const c=await api.get('codigos',cod);
+    if(!c){ S.partLista=[]; S.partMsg='Nenhum perfil com o código '+cod+'.'; return; }
+    const p=await api.get('perfis',c.pid); lista=p?[p]:[];
+  } else if(S.partAssoc==='*'){ lista=await api.list('perfis'); }
+  else if(S.partAssoc){ lista=await api.list('perfis',['assoc',S.partAssoc]); }
+  else { S.partMsg='Escolha uma associação/missão ou digite um código.'; S.partLista=null; return; }
+  S.partLista=lista.sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt'));
+  S.partMsg=lista.length+' perfil(is) encontrado(s).';
+}
+function vPart(){
+  const q=norm(S.partNome||'');
+  const lista=(S.partLista||[]).filter(p=>!q || norm(p.nome).includes(q) || norm(p.clubeNome).includes(q));
+  return `<div><h1 class="h" style="font-size:30px">Participantes</h1><div class="small muted">Localize perfis por associação/missão ou pelo código individual. Excluir apaga o perfil, o código, os pontos, as medalhas e a ligação com os aparelhos.</div></div>
+  <div class="card" style="padding:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
+    <div class="field" style="flex:2 1 260px"><label for="pt-a">Associação / missão</label><select id="pt-a" class="inp" data-a2="partAssoc"><option value="">Escolha…</option><option value="*" ${S.partAssoc==='*'?'selected':''}>Todas (lê todos os perfis)</option>${S.assocs.map(a=>`<option value="${esc(a.id)}" ${S.partAssoc===a.id?'selected':''}>${esc(a.nome)}</option>`).join('')}</select></div>
+    <div class="field" style="flex:1 1 200px"><label for="pt-c">ou código individual</label><input id="pt-c" class="inp" data-in="partCod" value="${esc(S.partCod||'')}" maxlength="14" placeholder="DBV-XXXX-XXXX"></div>
+    <button class="btn btn-g" data-a="partBuscar">Buscar</button>
+  </div>
+  ${S.partMsg?`<div class="small muted" style="font-weight:700">${esc(S.partMsg)}</div>`:''}
+  ${S.partLista&&S.partLista.length?`<input class="inp" data-in="partNome" value="${esc(S.partNome||'')}" placeholder="Filtrar por nome ou clube" aria-label="Filtrar por nome ou clube">`:''}
+  <div style="display:flex;flex-direction:column;gap:8px">${lista.map(p=>`<div class="card row between wrap" style="padding:12px 14px;gap:10px">
+    <div style="min-width:0"><b style="font-size:16px">${esc(p.nome)}</b> <span class="small muted">· ${esc(p.classe||'')}</span>
+      <div class="small muted">Clube ${esc(p.clubeNome||'')} · ${esc(p.assocNome||'')} · ${esc(p.uniao||'')}</div>
+      <div class="small"><b style="color:var(--verde)">${+p.ptsTemporada||0} pts na temporada</b> · ${+p.ptsTotal||0} no total · desde ${esc(fmtDate(p.criadoEm))}</div>
+      ${S.partCodigo&&S.partCodigo.pid===p.id?`<div class="small" style="font-weight:800">Código: ${esc(S.partCodigo.cod)}</div>`:''}</div>
+    <div class="row wrap" style="gap:6px"><button class="chip" data-a="partVerCod" data-id="${esc(p.id)}">Ver código</button><button class="chip" data-a="partZerar" data-id="${esc(p.id)}">Zerar pontos</button><button class="btn btn-ro" style="min-height:36px;font-size:13px" data-a="partExcluir" data-id="${esc(p.id)}">Excluir</button></div>
+  </div>`).join('')}</div>`;
+}
+async function excluirPart(p){
+  const cods=await api.list('codigos',['pid',p.id]);
+  const ops=[{col:'perfis',id:p.id,del:true},{col:'progresso',id:p.id,del:true}];
+  cods.forEach(c=>{ ops.push({col:'codigos',id:c.id,del:true}); (c.uids||[]).forEach(u=>ops.push({col:'vinculos',id:u,del:true})); });
+  if(p.clubeId){ const c=await api.get('clubes',p.clubeId); if(c) ops.push({col:'clubes',id:c.id,data:{membros:Math.max(0,(+c.membros||1)-1)}}); }
+  await api.batch(ops);
+  S.partLista=(S.partLista||[]).filter(x=>x.id!==p.id); S.partMsg='Perfil de '+p.nome+' excluído.'; toast('Perfil excluído');
+}
 function vBackup(){
   return `<div><h1 class="h" style="font-size:30px">Importar / Exportar</h1><div class="small muted">Cópia de segurança das especialidades, perguntas e materiais em arquivo .json. A importação por planilha (CSV) vem numa próxima versão.</div></div>
   <div class="card" style="padding:18px;display:flex;flex-direction:column;gap:10px"><h2 class="h" style="font-size:20px">Exportar</h2>
@@ -376,7 +416,7 @@ function render(){
   let h='';
   if(S.cfgErr) h=`<div style="padding:30px;max-width:640px;margin:auto"><h1 class="h">Falta configurar</h1><p class="p">${esc(S.cfgErr)}</p></div>`;
   else if(!S.user) h=vLogin();
-  else { const V={inicio:vInicio,specs:vSpecs,qs:vQs,mat:vMat,avisos:vAvisos,geo:vGeo,insc:vInsc,backup:vBackup,pts:vPts,fb:vFb}[S.tab]; h=`<div class="layout">${vNav()}<main>${S.loaded?V():'<p class="muted">Carregando dados…</p>'}</main></div>`; }
+  else { const V={inicio:vInicio,specs:vSpecs,qs:vQs,mat:vMat,avisos:vAvisos,geo:vGeo,insc:vInsc,part:vPart,backup:vBackup,pts:vPts,fb:vFb}[S.tab]; h=`<div class="layout">${vNav()}<main>${S.loaded?V():'<p class="muted">Carregando dados…</p>'}</main></div>`; }
   h+=vModal(); if(S.toast) h+=`<div class="toast" role="status">${esc(S.toast)}</div>`; if(S.busy) h+='<div class="busy"></div>';
   const ae=document.activeElement, fid=ae&&ae.id, pos=ae&&ae.selectionStart;
   app.innerHTML=h;
@@ -442,12 +482,18 @@ app.addEventListener('click', e=>{
     case 'inscUniao': S.inscUniao=b.dataset.id||''; render(); break;
     case 'inscCsv': { const q=v=>'"'+String(v).replace(/"/g,'""')+'"'; const linhas=[['Associação/Missão','Sigla','União','Situação','Clubes','Inscritos'].map(q).join(';')].concat(linhasInsc().sort((a,b)=>b.n-a.n).map(r=>[r.nome,r.sigla,r.uniaoNome,r.ativa?'Ativa':'Desativada',r.clubes,r.n].map(q).join(';')));
       const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+linhas.join('\r\n')],{type:'text/csv;charset=utf-8'})); a.download='desbravaquiz-inscritos-'+new Date().toISOString().slice(0,10)+'.csv'; document.body.appendChild(a); a.click(); a.remove(); break; }
+    case 'partBuscar': S.partNome=''; S.partCodigo=null; run(buscarPart); break;
+    case 'partVerCod': { const id=b.dataset.id; run(async()=>{ const c=await api.list('codigos',['pid',id]); S.partCodigo={pid:id,cod:c.length?c[0].id:'(sem código)'}; }); break; }
+    case 'partZerar': { const p=(S.partLista||[]).find(x=>x.id===b.dataset.id); if(!p) break; ask('Zerar os pontos de '+p.nome+'?','Temporada e total vão para 0. Medalhas continuam. Os pontos já somados ao clube continuam no clube.','Zerar',()=>run(async()=>{ await api.set('perfis',p.id,{ptsTemporada:0,ptsTotal:0,atualizadoEm:Date.now()}); p.ptsTemporada=0; p.ptsTotal=0; toast('Pontos zerados'); }),true); break; }
+    case 'partExcluir': { const p=(S.partLista||[]).find(x=>x.id===b.dataset.id); if(!p) break; ask('Excluir o perfil de '+p.nome+'?','Clube '+(p.clubeNome||'')+' · '+(p.assocNome||'')+'. Apaga perfil, código, pontos e medalhas. Não pode ser desfeito.','Excluir perfil',()=>run(()=>excluirPart(p)),true); break; }
     case 'asToggle': { const x=S.assocs.find(v=>v.id===b.dataset.id); if(!x) break; const on=x.ativo===false; run(async()=>{ await api.set('associacoes',x.id,{ativo:on}); x.ativo=on; toast((on?'Ativada: ':'Desativada: ')+x.nome); }); break; }
     case 'export': { const inc=!!(document.getElementById('ex-img')||{}).checked; run(async()=>{ const specs=await api.list('especialidades'); const perguntas=await api.list('perguntas'); const materiais=await api.list('materiais'); const imagens=inc?await api.list('imagens'):[];
         download('desbravaquiz-backup-'+new Date().toISOString().slice(0,10)+'.json', JSON.stringify({tipo:'desbravaquiz-backup',versao:1,exportadoEm:new Date().toISOString(),especialidades:specs,perguntas,materiais,imagens},null,1)); toast('Backup baixado'); }); break; }
   }
 });
 app.addEventListener('input', e=>{ const t=e.target; lastAct=Date.now();
+  if(t.dataset.in==='partCod'){ S.partCod=t.value.slice(0,14); return; }
+  if(t.dataset.in==='partNome'){ S.partNome=t.value.slice(0,40); const pos=t.selectionStart; render(); const n=document.querySelector('[data-in="partNome"]'); if(n){ n.focus(); try{ n.setSelectionRange(pos,pos); }catch(_){} } return; }
   if(t.dataset.in==='geoBusca'){ S.geoBusca=t.value.slice(0,40); const pos=t.selectionStart; render(); const n=document.querySelector('[data-in="geoBusca"]'); if(n){ n.focus(); try{ n.setSelectionRange(pos,pos); }catch(_){} } return; }
   if(!S.mat) return;
   if(t.dataset.mt!=null){ S.mat.texts[+t.dataset.mt].titulo=t.value; matPreview(); }
@@ -455,6 +501,7 @@ app.addEventListener('input', e=>{ const t=e.target; lastAct=Date.now();
   else if(t.dataset.mc!=null){ S.mat.imgs[+t.dataset.mc].legenda=t.value; matPreview(); } });
 app.addEventListener('keydown', e=>{ const t=e.target; if(t&&t.dataset&&t.dataset.mb!=null&&(e.ctrlKey||e.metaKey)&&(e.key==='b'||e.key==='B')){ e.preventDefault(); const btn=app.querySelector('[data-a="bold"][data-k="'+t.dataset.mb+'"]'); if(btn) btn.click(); } });
 app.addEventListener('change', e=>{ const t=e.target; lastAct=Date.now();
+  if(t.dataset.a2==='partAssoc'){ S.partAssoc=t.value; S.partCod=''; return; }
   if(t.dataset.img!=null&&t.files&&t.files[0]){ const i=+t.dataset.img, f=t.files[0]; if(!/^image\/(png|jpeg|webp)$/.test(f.type)){ toast('Envie só PNG, JPG ou WEBP.'); return; } if(f.size>10*1024*1024){ toast('Imagem muito grande (máx. 10 MB).'); return; }
     resizeImage(f).then(d=>{ const im=S.mat.imgs[i]; im.data=d; im.changed=true; render(); }).catch(()=>toast('Não consegui abrir essa imagem.')); return; }
   if(t.dataset.import&&t.files&&t.files[0]){ const f=t.files[0]; t.value=''; f.text().then(txt=>importBackup(txt)).catch(()=>{ S.err='Não consegui ler o arquivo.'; render(); }); return; }
