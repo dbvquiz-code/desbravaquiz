@@ -157,6 +157,7 @@ async function loadAll(){
   S.unioes=unioes.sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt'));
   S.assocs=assocs.sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt'));
   S.avisos=avisos.sort((a,b)=>(b.criadoEm||0)-(a.criadoEm||0));
+  try{ const d=await api.get('config','desafio'); S.desafio=!!(d&&d.ativo); }catch(e){ S.desafio=false; }
   try{ S.clubes=await api.list('clubes'); }catch(e){ S.clubes=[]; }
   try{ S.feedbacks=(await api.list('feedbacks')).sort((a,b)=>(b.criadoEm||0)-(a.criadoEm||0)); }catch(e){ S.feedbacks=[]; }
   S.loaded=true;
@@ -194,6 +195,12 @@ function vInicio(){
   return `<h1 class="h" style="font-size:30px">Início</h1>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
     ${[['Especialidades',S.specs.length],['Publicadas',S.specs.filter(s=>s.publicada).length],['Uniões',S.unioes.length],['Associações/missões',S.assocs.length],['Avisos ativos',S.avisos.filter(a=>a.ativo).length],['Feedbacks',S.feedbacks.length]].map(x=>`<div class="card" style="padding:14px 16px"><div class="small muted" style="font-weight:700">${x[0]}</div><div class="h" style="font-size:30px;color:var(--verde)">${x[1]}</div></div>`).join('')}
+  </div>
+  <div class="card" style="padding:18px;display:flex;flex-direction:column;gap:10px;border:2px solid ${S.desafio?'var(--verde)':'#ddd'}">
+    <div class="row between wrap" style="gap:10px"><h2 class="h" style="font-size:20px">🎯 Desafio</h2>
+      <span class="pill" style="background:${S.desafio?'#DDF0E2':'#eee'};color:${S.desafio?'var(--verde)':'var(--cinza)'}">${S.desafio?'Ativo':'Desativado'}</span></div>
+    <p class="p muted">10 perguntas misturadas de todas as especialidades publicadas, sem repetir. Só aparece para assinantes Prêmio. Quem não é assinante vê o cartão com cadeado e é levado à tela de assinatura.</p>
+    <div><button class="btn ${S.desafio?'btn-o':'btn-y'}" data-a="togDesafio" ${S.busy?'disabled':''}>${S.desafio?'Desativar Desafio':'Ativar Desafio'}</button></div>
   </div>
   <div class="card" style="padding:18px;display:flex;flex-direction:column;gap:10px;${semDados?'border:2px solid var(--amarelo)':''}">
     <h2 class="h" style="font-size:20px">Dados iniciais</h2>
@@ -541,6 +548,7 @@ app.addEventListener('click', e=>{
         const ops=[]; SEED.unioes.forEach(u=>ops.push({col:'unioes',id:u.id,data:u})); SEED.associacoes.forEach(x=>ops.push({col:'associacoes',id:x.id,data:x})); SEED.areas.forEach(x=>ops.push({col:'areas',id:x.id,data:x}));
         ops.push({col:'config',id:'classes',data:{lista:SEED.classes.map(c=>c.nome)}}); ops.push({col:'config',id:'geral',data:{limiteDiarioPontos:300,tetoPorEspecialidade:15,temporada:'trimestral',rankingMinutos:10,assinatura:{preco:'R$ 20,00',periodo:'semestral',diasGratis:15}}});
         await api.batch(ops); await loadAll(); toast('Dados iniciais carregados!'); })); break;
+    case 'togDesafio': { const novo=!S.desafio; ask(novo?'Ativar o Desafio?':'Desativar o Desafio?', novo?'Os assinantes passam a ver o Desafio na aba Quiz.':'O Desafio some do app para todos (o progresso de cada pessoa é mantido).', novo?'Ativar':'Desativar', ()=>run(async()=>{ await api.set('config','desafio',{ativo:novo}); S.desafio=novo; toast(novo?'Desafio ativado!':'Desafio desativado.'); })); break; }
     case 'specNew': S.specEdit=null; S.err=''; render(); break;
     case 'specEdit': { const s=S.specs.find(x=>x.id===b.dataset.id); S.specEdit={...s}; S.err=''; render(); window.scrollTo({top:0,behavior:'smooth'}); break; }
     case 'specDelAsk': { const s=S.specEdit; ask('Excluir '+s.nome+'?','A especialidade, todas as perguntas e o material dela serão apagados. Não pode ser desfeito.','Excluir tudo',()=>run(async()=>{
