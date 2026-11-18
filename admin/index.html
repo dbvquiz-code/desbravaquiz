@@ -71,12 +71,12 @@ main{flex:999 1 560px;min-width:0;padding:24px;display:flex;flex-direction:colum
 //  2) Publique este arquivo no GitHub Pages.
 // =====================================================================
 const firebaseConfig = {
-  apiKey: "AIzaSyDY2JKBk_yhRitXYKTCJtHvgiwrGeQOu7U",
-  authDomain: "desbravaquiz-a2a82.firebaseapp.com",
-  projectId: "desbravaquiz-a2a82",
-  storageBucket: "desbravaquiz-a2a82.firebasestorage.app",
-  messagingSenderId: "206295901768",
-  appId: "1:206295901768:web:30e750f73633958338da7d"
+  apiKey: "COLE_AQUI",
+  authDomain: "COLE_AQUI",
+  projectId: "COLE_AQUI",
+  storageBucket: "COLE_AQUI",
+  messagingSenderId: "COLE_AQUI",
+  appId: "COLE_AQUI"
 };
 const FIREBASE_VERSION = '13.1.0';
 const ADMIN_EMAIL = 'dbvquiz@gmail.com';
@@ -233,7 +233,14 @@ function vQs(){
   const sp=S.specs.find(s=>s.id===S.qSpec); const qe=S.qEdit; const v=k=>qe?esc(k==='e1'?qe.erradas[0]:k==='e2'?qe.erradas[1]:k==='e3'?qe.erradas[2]:qe[k]||''):'';
   return `<div><h1 class="h" style="font-size:30px">Perguntas</h1><div class="small muted">4 alternativas (1 certa), explicação curta. Mínimo recomendado: 15 por especialidade. No app a ordem das alternativas é sorteada.</div></div>
   <div class="field" style="max-width:420px"><label for="q-sp">Especialidade</label><select id="q-sp" class="inp" data-ch="qSpec">${specOptions(S.qSpec)}</select></div>
-  ${sp?`<form class="card" data-f="q" id="q-form" style="padding:18px;display:flex;flex-direction:column;gap:10px;${qe?'border:2px solid var(--amarelo)':''}">
+  ${sp?`<div class="card row wrap" style="padding:12px 14px;gap:8px;align-items:center">
+    <b style="margin-right:auto">Planilha de perguntas</b>
+    <button class="btn btn-o" type="button" data-a="qExport">⬇ Exportar ${S.qs.length?'('+S.qs.length+')':'(em branco)'}</button>
+    <button class="btn btn-o" type="button" data-a="qModelo">⬇ Modelo em branco</button>
+    <label class="btn btn-g" style="cursor:pointer;position:relative">⬆ Importar<input type="file" accept=".csv,text/csv" data-qimport="1" style="position:absolute;width:1px;height:1px;opacity:0"></label>
+    <span class="small muted" style="flex-basis:100%">Arquivo CSV (abre no Excel/Google Planilhas). Colunas: enunciado (até 200), certa, errada1, errada2, errada3 (até 120 cada), explicacao (até 300), dificuldade (facil, media ou dificil). Importar só adiciona; perguntas com o mesmo enunciado são ignoradas.</span>
+  </div>
+  <form class="card" data-f="q" id="q-form" style="padding:18px;display:flex;flex-direction:column;gap:10px;${qe?'border:2px solid var(--amarelo)':''}">
     <h2 class="h" style="font-size:20px">${qe?'Editando pergunta':'Nova pergunta'} · ${esc(sp.nome)}</h2>
     <div class="field"><label for="q-t">Enunciado</label><input id="q-t" name="enunciado" class="inp" maxlength="200" value="${v('enunciado')}" required></div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
@@ -545,6 +552,38 @@ function matPreview(){ const el=document.getElementById('mat-prev'); if(el&&S.ma
 // ---------- ações ----------
 function ask(title,text,ok,fn,danger){ S.modal={title,text,ok,fn,danger}; render(); }
 async function recountSpec(id){ const n=(await api.list('perguntas',['espId',id])).length; await api.set('especialidades',id,{nPerguntas:n,atualizadaEm:Date.now()}); const s=S.specs.find(x=>x.id===id); if(s) s.nPerguntas=n; }
+// ---------- perguntas: CSV para importar/exportar ----------
+const Q_COLS=['enunciado','certa','errada1','errada2','errada3','explicacao','dificuldade'];
+function csvCampo(v){ v=String(v==null?'':v); if(/^[=+\-@\t\r]/.test(v)) v="'"+v; return /[";\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
+function qCsv(lista){ const linhas=[Q_COLS.join(';')]; lista.forEach(q=>linhas.push([q.enunciado,q.certa,...(q.erradas||[]),q.explicacao||'',q.dificuldade||'facil'].map(csvCampo).join(';'))); return '\ufeff'+linhas.join('\r\n')+'\r\n'; }
+function baixarCsv(nome,texto){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([texto],{type:'text/csv;charset=utf-8'})); a.download=nome; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},500); }
+function lerCsv(txt){ txt=String(txt).replace(/^\ufeff/,''); const pl=txt.split(/\r?\n/)[0]||''; const sep=(pl.split(';').length>=pl.split(',').length)?';':','; const rows=[]; let row=[],cur='',q=false;
+  for(let i=0;i<txt.length;i++){ const c=txt[i];
+    if(q){ if(c==='"'){ if(txt[i+1]==='"'){ cur+='"'; i++; } else q=false; } else cur+=c; }
+    else if(c==='"') q=true; else if(c===sep){ row.push(cur); cur=''; } else if(c==='\n'||c==='\r'){ if(c==='\r'&&txt[i+1]==='\n') i++; row.push(cur); rows.push(row); row=[]; cur=''; } else cur+=c; }
+  if(cur!==''||row.length){ row.push(cur); rows.push(row); } return rows.filter(r=>r.some(x=>String(x).trim()!=='')); }
+function semAspa(v){ return String(v||'').replace(/^'(?=[=+\-@])/,''); }
+async function importarPerguntas(txt){
+  const sp=S.specs.find(s=>s.id===S.qSpec); if(!sp) return;
+  if(txt.length>2e6){ S.err='Arquivo grande demais (máx. 2 MB).'; return render(); }
+  const rows=lerCsv(txt); if(!rows.length){ S.err='Arquivo vazio.'; return render(); }
+  const cab=rows[0].map(norm); const idx=Q_COLS.map(c=>cab.indexOf(c));
+  if(idx.slice(0,5).some(i=>i<0)){ S.err='Cabeçalho inválido. Use o modelo em branco (colunas: '+Q_COLS.join(';')+').'; return render(); }
+  const ja=new Set(S.qs.map(q=>norm(q.enunciado))); const novas=[], erros=[]; let rep=0;
+  rows.slice(1).forEach((r,n)=>{ const g=k=>semAspa(idx[Q_COLS.indexOf(k)]>=0?r[idx[Q_COLS.indexOf(k)]]:'');
+    const d={enunciado:cleanLine(g('enunciado'),200),certa:cleanLine(g('certa'),120),erradas:[cleanLine(g('errada1'),120),cleanLine(g('errada2'),120),cleanLine(g('errada3'),120)],explicacao:cleanLine(g('explicacao'),300)};
+    const dif=norm(g('dificuldade')); d.dificuldade=['facil','media','dificil'].includes(dif)?dif:'facil';
+    const linha=n+2;
+    if(!d.enunciado||!d.certa||d.erradas.some(x=>!x)){ erros.push(linha+' (falta texto)'); return; }
+    if(new Set([d.certa,...d.erradas].map(x=>x.toLowerCase())).size<4){ erros.push(linha+' (alternativas repetidas)'); return; }
+    const k=norm(d.enunciado); if(ja.has(k)){ rep++; return; } ja.add(k); novas.push(d); });
+  if(novas.length>500){ S.err='Máximo de 500 perguntas por importação.'; return render(); }
+  const resumo=novas.length+' pergunta(s) nova(s) para '+sp.nome+'.'+(rep?' '+rep+' repetida(s) serão ignoradas.':'')+(erros.length?' Linhas com erro, ignoradas: '+erros.slice(0,15).join(', ')+(erros.length>15?'…':'')+'.':'');
+  if(!novas.length){ S.err='Nada para importar. '+resumo; return render(); }
+  ask('Importar perguntas?',resumo,'Importar',()=>run(async()=>{
+    const agora=Date.now(); const ops=novas.map((d,i)=>{ const id=crypto.randomUUID().replace(/-/g,'').slice(0,20); return {col:'perguntas',id,data:{...d,espId:S.qSpec,criadaEm:agora+i}}; });
+    await api.batch(ops); await loadQs(S.qSpec); await recountSpec(S.qSpec); toast(novas.length+' pergunta(s) importada(s)!'); }));
+}
 function download(name,text){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:'application/json'})); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},500); }
 
 app.addEventListener('click', e=>{
@@ -569,6 +608,8 @@ app.addEventListener('click', e=>{
     case 'goMat': S.tab='mat'; run(()=>loadMat(b.dataset.id)); break;
     case 'qEdit': S.qEdit=S.qs.find(q=>q.id===b.dataset.id); S.err=''; render(); { const f=document.getElementById('q-form'); if(f) f.scrollIntoView({behavior:'smooth'}); } break;
     case 'qCancel': S.qEdit=null; render(); break;
+    case 'qExport': { const sp=S.specs.find(x=>x.id===S.qSpec); if(!sp) break; baixarCsv('perguntas_'+(sp.codigo||sp.id)+(S.qs.length?'':'_modelo')+'.csv',qCsv(S.qs)); break; }
+    case 'qModelo': { const sp=S.specs.find(x=>x.id===S.qSpec); baixarCsv('modelo_perguntas'+(sp?'_'+(sp.codigo||sp.id):'')+'.csv',qCsv([])); break; }
     case 'qDelAsk': { const q=S.qs.find(x=>x.id===b.dataset.id); ask('Excluir pergunta?',q.enunciado,'Excluir',()=>run(async()=>{ await api.del('perguntas',q.id); S.qs=S.qs.filter(x=>x.id!==q.id); await recountSpec(S.qSpec); toast('Pergunta excluída'); }),true); break; }
     case 'bold': { const i=+b.dataset.k; const ta=document.getElementById('mb-'+i); if(!ta) break; let st=ta.selectionStart, en=ta.selectionEnd; const v=ta.value; while(st<en&&/\s/.test(v[st])) st++; while(en>st&&/\s/.test(v[en-1])) en--; const sel=v.slice(st,en); let nv,cs,ce;
       if(sel&&/^\*\*[\s\S]*\*\*$/.test(sel)){ nv=v.slice(0,st)+sel.slice(2,-2)+v.slice(en); cs=st; ce=en-4; } else if(sel){ nv=v.slice(0,st)+'**'+sel+'**'+v.slice(en); cs=st; ce=en+4; } else { nv=v.slice(0,st)+'**texto em negrito**'+v.slice(en); cs=st+2; ce=st+18; }
@@ -634,6 +675,7 @@ app.addEventListener('change', e=>{ const t=e.target; lastAct=Date.now();
   if(t.dataset.a2==='partAssoc'){ S.partAssoc=t.value; S.partCod=''; return; }
   if(t.dataset.img!=null&&t.files&&t.files[0]){ const i=+t.dataset.img, f=t.files[0]; if(!/^image\/(png|jpeg|webp)$/.test(f.type)){ toast('Envie só PNG, JPG ou WEBP.'); return; } if(f.size>10*1024*1024){ toast('Imagem muito grande (máx. 10 MB).'); return; }
     resizeImage(f).then(d=>{ const im=S.mat.imgs[i]; im.data=d; im.changed=true; render(); }).catch(()=>toast('Não consegui abrir essa imagem.')); return; }
+  if(t.dataset.qimport&&t.files&&t.files[0]){ const f=t.files[0]; t.value=''; if(f.size>2e6){ S.err='Arquivo grande demais (máx. 2 MB).'; render(); return; } f.text().then(txt=>importarPerguntas(txt)).catch(()=>{ S.err='Não consegui ler o arquivo.'; render(); }); return; }
   if(t.dataset.import&&t.files&&t.files[0]){ const f=t.files[0]; t.value=''; f.text().then(txt=>importBackup(txt)).catch(()=>{ S.err='Não consegui ler o arquivo.'; render(); }); return; }
   const k=t.dataset.ch;
   if(k==='specArea'){ const e2=S.specEdit; const nm=document.getElementById('sp-n'); S.specEdit={...e2,nome:nm?nm.value:e2.nome,area:t.value,codigo:(e2.id&&String(e2.codigo).slice(0,2)===t.value)?e2.codigo:nextCode(t.value)}; S.err=''; render(); }
