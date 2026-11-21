@@ -70,6 +70,7 @@ const firebaseConfig = {
   appId: "1:206295901768:web:30e750f73633958338da7d"
 };
 const V='13.1.0', PLAY='https://play.google.com/store/apps/details?id=br.app.desbravaquiz';
+const parcial=(i,n)=>i+1<=8&&i<n-1; // classificação/total só até a 8ª questão; depois, surpresa até o pódio
 const CORES=['#E21B3C','#1368CE','#D89E00','#26890C'], FORMAS=['▲','◆','●','■'];
 const $=id=>document.getElementById(id);
 const tela=$('tela');
@@ -199,13 +200,13 @@ function render(s){
     const ok=!!(meu&&meu.a), ganho=meu?meu.g||0:0, seq=meu?meu.s||0:0;
     efeito(ok); $('sub').textContent='Resultado · '+(i+1)+' de '+n;
     mostrar(el('div',{class:'res',style:'background:'+(ok?'#26890C':'#E21B3C')},el('b',null,ok?'✓ Acertou!':respondida===i?'✗ Errou':'⏰ Sem resposta'),
-        ok?el('div',{style:'font-weight:800;font-size:18px'},'+'+ganho+' pts'+(seq>=2?'   🔥 sequência x'+seq:'')):null,el('div',{style:'font-weight:800;margin-top:4px'},'Seus pontos: '+total)),
+        ok?el('div',{style:'font-weight:800;font-size:18px'},'+'+ganho+' pts'+(seq>=2?'   🔥 sequência x'+seq:'')):null,parcial(i,n)?el('div',{style:'font-weight:800;margin-top:4px'},'Seus pontos: '+total):null),
       certa>=0&&ops[certa]!=null?el('div',{class:'mut',style:'font-weight:800;margin-top:10px'},'Resposta certa:'):null,
       certa>=0&&ops[certa]!=null?opcao(certa,String(ops[certa]),'marca'):null,
-      el('p',{class:'mut centro'},'A classificação fica em segredo até o pódio! 🤫')); return; }
+      el('p',{class:'mut centro'},parcial(i,n)?'A classificação fica em segredo até o pódio! 🤫':'Agora os pontos são surpresa até o pódio! 🤫')); return; }
   if(est==='fim'||est==='podio'){ pararRelogio(); pararMusica(); if(est==='podio') fanfarra(); $('sub').textContent='Fim do torneio';
-    mostrar(el('div',{class:'centro'},el('div',{class:'grande'},'🏁'),el('div',null,'Você fez'),el('div',{class:'cod',style:'font-size:34px;letter-spacing:0'},total+' pontos'),
-      el('div',{class:'mut'},(meu?meu.t||0:0)+' de '+n+' acertos'),meu&&meu.x?el('p',{style:'font-weight:800;color:#B07800'},'💯 100% de acertos! +1000'):null,
+    mostrar(el('div',{class:'centro'},el('div',{class:'grande'},'🏁'),est==='podio'?el('div',null,'Você fez'):null,est==='podio'?el('div',{class:'cod',style:'font-size:34px;letter-spacing:0'},total+' pontos'):el('h2',null,'Os pontos finais aparecem no pódio! 🥁'),
+      el('div',{class:'mut'},(meu?meu.t||0:0)+' de '+n+' acertos'),est==='podio'&&meu&&meu.x?el('p',{style:'font-weight:800;color:#B07800'},'💯 100% de acertos! +1000'):null,
       el('h2',null,est==='podio'?'🥁 O pódio está sendo revelado na tela do apresentador!':'🏆 O pódio será revelado na tela do apresentador.'),
       el('a',{class:'btn o',href:PLAY},'Baixar o DesbravaQuiz'))); return; }
   if(est==='encerrada') fim('O apresentador encerrou o torneio.');
@@ -252,7 +253,8 @@ function renderTelao(s){
     const barras=el('div',{class:'barras'},...cont.map((v,k)=>el('div',{style:'background:'+CORES[k]+';height:'+(15+85*v/max)+'%;opacity:'+(k===certa?1:.35)},FORMAS[k]+' '+v)));
     mostrar(el('div',{class:'tq',style:'font-size:clamp(22px,2.6vw,36px)'},String((s.q||{}).e||'')),barras,
       el('div',{class:'grade'},...ops.map((o,k)=>opcao(k,String(o)+(k===certa?'  ✓':''),k===certa?'marca':'apaga'))),
-      el('h2',{style:'font-size:28px;margin-top:22px'},'🏆 Classificação parcial'),listaTop((s.top||[]).slice(0,5))); return; }
+      parcial(i,n)?el('h2',{style:'font-size:28px;margin-top:22px'},'🏆 Classificação parcial'):el('div',{class:'suspense',style:'margin-top:22px'},'🤫 A classificação agora é surpresa até o pódio!'),
+      parcial(i,n)?listaTop((s.top||[]).slice(0,5)):null); return; }
   if(est==='fim'){ pararRelogio(); pararMusica(); $('titulo').textContent='🏁 Fim do quiz';
     mostrar(el('div',{class:'centro'},el('div',{class:'grande',style:'font-size:110px'},'🥁'),el('div',{class:'suspense'},'Quem será o campeão?'),el('p',{class:'mut',style:'font-size:22px'},'O apresentador vai revelar o pódio…'))); return; }
   if(est==='podio'){ pararRelogio(); pararMusica(); $('titulo').textContent='🏆 Pódio'; podioTelao(s.top||[]); return; }
