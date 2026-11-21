@@ -80,6 +80,14 @@ function el(tag,attrs,...filhos){ const e=document.createElement(tag); if(attrs)
   for(const f of filhos){ if(f==null||f===false) continue; e.append(f instanceof Node?f:document.createTextNode(String(f))); } return e; }
 function mostrar(...filhos){ tela.replaceChildren(...filhos.filter(Boolean)); window.scrollTo(0,0); }
 function opcao(i,txt,extra){ return el('button',{class:'op'+(extra?' '+extra:''),style:'background:'+CORES[i]},el('span',{class:'f'},FORMAS[i]),el('span',null,txt)); }
+// foto da pergunta (opcional): carregada do banco, só imagem JPEG em base64
+const cacheImg=new Map();
+function fotoPergunta(id,grande){ if(!id||!/^[A-Za-z0-9_-]{1,80}$/.test(id)||!fb) return null;
+  const im=el('img',{alt:'Imagem da pergunta',style:'display:none;max-width:100%;max-height:'+(grande?'38vh':'210px')+';border-radius:14px;margin:6px auto 10px'});
+  const usar=d=>{ if(/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(d||'')){ im.src=d; im.style.display='block'; } };
+  if(cacheImg.has(id)) usar(cacheImg.get(id));
+  else { const {F,db}=fb; F.getDoc(F.doc(db,'imagens',id)).then(x=>{ const d=x.exists()?x.data().data:''; cacheImg.set(id,d); usar(d); }).catch(()=>{}); }
+  return im; }
 function listaTop(top,meu){ const l=el('div',{class:'lista'});
   if(!top||!top.length) l.append(el('div',{class:'mut',style:'padding:8px 0'},'Ninguém pontuou ainda.'));
   (top||[]).slice(0,10).forEach((j,i)=>{ const pos=['🥇','🥈','🥉'][i]||((i+1)+'º');
@@ -192,7 +200,7 @@ function render(s){
   if(est==='pergunta'){ const q=s.q||{}, ops=Array.isArray(q.o)?q.o:[]; $('sub').textContent='Pergunta '+(i+1)+' de '+n;
     const cab=telao?el('h2',{class:'centro',style:'margin-top:0;color:var(--verde)'},'📺 Olhe a pergunta no telão'):el('h2',{style:'margin-top:0'},String(q.e||''));
     if(respondida===i){ mostrar(cab,el('h2',{class:'centro',style:'color:var(--verde)'},'Resposta enviada! ✋'),escolha>=0?opcao(escolha,ops[escolha]):null,el('p',{class:'mut centro'},'Aguarde o fim do tempo…')); }
-    else { mostrar(cab,...ops.map((o,k)=>{ const b=opcao(k,String(o)); b.onclick=()=>responder(i,k,ops,q,telao); return b; }));
+    else { mostrar(cab,telao?null:fotoPergunta(q.img,false),...ops.map((o,k)=>{ const b=opcao(k,String(o)); b.onclick=()=>responder(i,k,ops,q,telao); return b; }));
       relogio(s.tempo||20,()=>{ if(respondida!==iAtual) mostrar(el('div',{class:'centro'},el('h1',null,'⏰ Tempo esgotado!'),el('p',{class:'mut'},'Aguarde o resultado…'))); }); }
     if(!telao) tocarMusica(); return; }
   if(est==='resultado'){ pararRelogio(); pararMusica();
@@ -246,7 +254,7 @@ function renderTelao(s){
     return; }
   if(est==='pergunta'){ const q=s.q||{}, ops=Array.isArray(q.o)?q.o:[]; $('titulo').textContent='Pergunta '+(i+1)+' de '+n;
     const g=el('div',{class:'grade'},...ops.map((o,k)=>opcao(k,String(o))));
-    mostrar(el('div',{class:'tq'},String(q.e||'')),g); relogio(s.tempo||20,null); tocarMusica(); return; }
+    mostrar(el('div',{class:'tq'},String(q.e||'')),fotoPergunta(q.img,true),g); relogio(s.tempo||20,null); tocarMusica(); return; }
   if(est==='resultado'){ pararRelogio(); pararMusica(); $('titulo').textContent='Resultado · '+(i+1)+' de '+n;
     const ops=(s.q&&Array.isArray(s.q.o))?s.q.o:[], certa=typeof s.certa==='number'?s.certa:-1, cont=Array.isArray(s.cont)?s.cont:[0,0,0,0];
     const max=Math.max(1,...cont); efeito(true);

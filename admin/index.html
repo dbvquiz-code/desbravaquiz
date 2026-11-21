@@ -282,12 +282,19 @@ function vQs(){
       <div class="field"><label for="q-3">Errada 3</label><input id="q-3" name="e3" class="inp" maxlength="120" value="${v('e3')}" required></div>
     </div>
     <div class="field"><label for="q-x">Explicação (aparece depois da resposta)</label><input id="q-x" name="explicacao" class="inp" maxlength="300" value="${v('explicacao')}"></div>
+    <div class="field"><label>Foto da pergunta (opcional)</label>
+      <div class="row wrap" style="align-items:center;gap:12px">
+        <img id="q-img-prev" alt="Prévia da foto" style="max-width:180px;max-height:130px;border-radius:10px;border:1px solid #ddd;display:${S.qImg&&S.qImg.data?'block':'none'}" src="${S.qImg&&S.qImg.data?esc(S.qImg.data):''}">
+        <label class="btn btn-o" style="cursor:pointer;position:relative">📷 ${qe&&qe.img?'Trocar foto':'Escolher foto'}<input type="file" accept="image/png,image/jpeg,image/webp" data-qimg="1" style="position:absolute;width:1px;height:1px;opacity:0"></label>
+        <button type="button" class="btn btn-ro" id="q-img-del" data-a="qImgDel" style="display:${S.qImg&&S.qImg.data?'inline-flex':'none'}">Remover foto</button>
+        <span class="small muted" id="q-img-info">${S.qImg&&S.qImg.data?Math.round(S.qImg.data.length*0.75/1024)+' KB':'Fica pequena e leve (até ~40 KB) para não pesar o app.'}</span>
+      </div></div>
     <div class="field" style="max-width:220px"><label for="q-d">Dificuldade</label><select id="q-d" name="dificuldade" class="inp">${['facil','media','dificil'].map((d,i)=>`<option value="${d}" ${(qe?qe.dificuldade:'facil')===d?'selected':''}>${['Fácil','Média','Difícil'][i]}</option>`).join('')}</select></div>
     ${S.err?`<div class="err">${esc(S.err)}</div>`:''}
     <div class="row wrap"><button class="btn btn-y" type="submit" ${S.busy?'disabled':''}>${qe?'Salvar alterações':'Salvar pergunta'}</button>${qe?'<button class="btn btn-o" type="button" data-a="qCancel">Cancelar edição</button>':''}<span class="small muted">${S.qs.length} pergunta(s) cadastrada(s)</span></div>
   </form>
   <div class="card tblbox"><table class="tbl"><thead><tr><th>#</th><th>Pergunta</th><th>Certa</th><th>Erradas</th><th>Acerto</th><th></th></tr></thead><tbody>
-    ${S.qs.map((q,i)=>`<tr style="${qe&&qe.id===q.id?'background:#FFFBEA':''}"><td>${i+1}</td><td>${esc(q.enunciado)}</td><td style="color:var(--verde);font-weight:700">${esc(q.certa)}</td><td class="small muted">${(q.erradas||[]).map(esc).join(' · ')}</td><td>${estatCel(q)}</td><td style="white-space:nowrap"><button class="chip" data-a="qEdit" data-id="${esc(q.id)}">Editar</button> <button class="chip" style="background:#FBE0DD;color:var(--vermelho-txt)" data-a="qDelAsk" data-id="${esc(q.id)}">Excluir</button></td></tr>`).join('') || '<tr><td colspan="6" class="muted">Nenhuma pergunta ainda.</td></tr>'}
+    ${S.qs.map((q,i)=>`<tr style="${qe&&qe.id===q.id?'background:#FFFBEA':''}"><td>${i+1}</td><td>${q.img?'📷 ':''}${esc(q.enunciado)}</td><td style="color:var(--verde);font-weight:700">${esc(q.certa)}</td><td class="small muted">${(q.erradas||[]).map(esc).join(' · ')}</td><td>${estatCel(q)}</td><td style="white-space:nowrap"><button class="chip" data-a="qEdit" data-id="${esc(q.id)}">Editar</button> <button class="chip" style="background:#FBE0DD;color:var(--vermelho-txt)" data-a="qDelAsk" data-id="${esc(q.id)}">Excluir</button></td></tr>`).join('') || '<tr><td colspan="6" class="muted">Nenhuma pergunta ainda.</td></tr>'}
   </tbody></table></div>`:'<p class="muted">Escolha uma especialidade para ver e cadastrar perguntas.</p>'}`;
 }
 function blocksHtml(m){ const out=[]; for(let i=0;i<N_TXT;i++){ const t=m.texts[i]||{}, im=m.imgs[i];
@@ -605,7 +612,9 @@ async function duplicarEsp(sp){
   if(m){ const imagens=[]; for(let i=0;i<(m.imagens||[]).length;i++){ const r=m.imagens[i]||{}; if(r.imgId){ const d=await api.get('imagens',r.imgId); if(d&&d.data){ const novo=id+'_'+i; ops.push({col:'imagens',id:novo,data:{data:d.data,espId:id,atualizadaEm:agora}}); imagens.push({imgId:novo,legenda:r.legenda||''}); continue; } } imagens.push({imgId:'',legenda:r.legenda||''}); }
     ops.push({col:'materiais',id,data:{espId:id,textos:m.textos||[],imagens,atualizadoEm:agora}}); }
   const qs=await api.list('perguntas',['espId',sp.id]);
-  qs.forEach((q,i)=>{ const {id:_x,...d}=q; ops.push({col:'perguntas',id:crypto.randomUUID().replace(/-/g,'').slice(0,20),data:{...d,espId:id,criadaEm:agora+i}}); });
+  for(let i=0;i<qs.length;i++){ const {id:_x,...d}=qs[i]; const nid=crypto.randomUUID().replace(/-/g,'').slice(0,20);
+    if(d.img){ const im=await api.get('imagens',d.img); if(im&&im.data){ await api.set('imagens','q_'+nid,{data:im.data,espId:id,pergunta:nid,atualizadaEm:agora},false); d.img='q_'+nid; } else d.img=''; }
+    ops.push({col:'perguntas',id:nid,data:{...d,espId:id,criadaEm:agora+i}}); }
   // imagens são grandes: grava uma a uma para não estourar o limite do lote
   for(const o of ops.filter(o=>o.col==='imagens')) await api.set(o.col,o.id,o.data,false);
   await api.batch(ops.filter(o=>o.col!=='imagens'));
@@ -667,6 +676,10 @@ async function materialPdf(sp){
   doc.save('material_'+String(sp.codigo||sp.id).replace(/[^A-Za-z0-9_-]/g,'')+'_'+norm(sp.nome).replace(/ /g,'_').slice(0,40)+'.pdf');
 }
 function resizeImage(file){ return new Promise((ok,bad)=>{ const r=new FileReader(); r.onerror=bad; r.onload=()=>{ const im=new Image(); im.onerror=bad; im.onload=()=>{ let max=900, q=0.78, out=''; for(let t=0;t<6;t++){ const k=Math.min(1,max/Math.max(im.width,im.height)); const c=document.createElement('canvas'); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k); const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(im,0,0,c.width,c.height); out=c.toDataURL('image/jpeg',q); if(out.length<600000) break; max=Math.round(max*0.8); q=Math.max(0.5,q-0.08); } ok(out); }; im.src=r.result; }; r.readAsDataURL(file); }); }
+// foto de pergunta: no máximo 480 px e ~40 KB (JPEG de baixa qualidade, leve para o app)
+function fotoPequena(file){ return new Promise((ok,bad)=>{ const r=new FileReader(); r.onerror=bad; r.onload=()=>{ const im=new Image(); im.onerror=bad; im.onload=()=>{ let max=480,q=0.6,out=''; for(let t=0;t<6;t++){ const k=Math.min(1,max/Math.max(im.width,im.height)); const c=document.createElement('canvas'); c.width=Math.max(1,Math.round(im.width*k)); c.height=Math.max(1,Math.round(im.height*k)); const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(im,0,0,c.width,c.height); out=c.toDataURL('image/jpeg',q); if(out.length<56000) break; max=Math.round(max*0.85); q=Math.max(0.35,q-0.07); } ok(out); }; im.src=r.result; }; r.readAsDataURL(file); }); }
+function qImgPrev(){ const im=document.getElementById('q-img-prev'), del=document.getElementById('q-img-del'), inf=document.getElementById('q-img-info'); const d=S.qImg&&S.qImg.data;
+  if(im){ im.src=d||''; im.style.display=d?'block':'none'; } if(del) del.style.display=d?'inline-flex':'none'; if(inf) inf.textContent=d?Math.round(d.length*0.75/1024)+' KB':(S.qImg&&S.qImg.mudou?'Foto será removida ao salvar.':'Fica pequena e leve (até ~40 KB) para não pesar o app.'); }
 const validImg=s=>/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(s||'') && s.length<900000;
 function matPreview(){ const el=document.getElementById('mat-prev'); if(el&&S.mat) el.innerHTML=blocksHtml(S.mat); }
 
@@ -730,15 +743,18 @@ app.addEventListener('click', e=>{
         await api.batch(ops); S.specs=S.specs.filter(x=>x.id!==s.id); S.specEdit=null; toast('Especialidade excluída'); }),true); break; }
     case 'goQs': S.tab='qs'; run(()=>loadQs(b.dataset.id)); break;
     case 'goMat': S.tab='mat'; run(()=>loadMat(b.dataset.id)); break;
-    case 'qEdit': S.qEdit=S.qs.find(q=>q.id===b.dataset.id); S.err=''; render(); { const f=document.getElementById('q-form'); if(f) f.scrollIntoView({behavior:'smooth'}); } break;
-    case 'qCancel': S.qEdit=null; render(); break;
+    case 'qEdit': S.qEdit=S.qs.find(q=>q.id===b.dataset.id); S.err=''; S.qImg={data:'',mudou:false};
+      if(S.qEdit&&S.qEdit.img){ const alvo=S.qEdit; api.get('imagens',alvo.img).then(d=>{ if(S.qEdit===alvo&&S.qImg&&!S.qImg.mudou&&d&&validImg(d.data)){ S.qImg.data=d.data; qImgPrev(); } }).catch(()=>{}); }
+      render(); { const f=document.getElementById('q-form'); if(f) f.scrollIntoView({behavior:'smooth'}); } break;
+    case 'qCancel': S.qEdit=null; S.qImg=null; render(); break;
+    case 'qImgDel': S.qImg={data:'',mudou:true}; qImgPrev(); break;
     case 'specPrev': { const id=b.dataset.id; S.prevCel={id,m:null}; render(); (async()=>{ try{ const a=S.matSpec,am=S.mat; await loadMat(id); const m=S.mat; S.matSpec=a; S.mat=am; if(S.prevCel&&S.prevCel.id===id){ S.prevCel.m=m; render(); } }catch(e){ S.prevCel=null; S.err=errMsg(e); render(); } })(); break; }
     case 'prevFechar': if(e.target===b){ S.prevCel=null; render(); } break;
     case 'specDup': { const sp=S.specs.find(x=>x.id===b.dataset.id); if(!sp) break; ask('Duplicar '+sp.nome+'?','Cria uma cópia em rascunho (não publicada), com código novo, o material com as fotos e todas as perguntas. Depois edite o nome na cópia.','Duplicar',()=>run(()=>duplicarEsp(sp))); break; }
     case 'matPdf': { const sp=S.specs.find(x=>x.id===b.dataset.id); if(!sp) break; run(async()=>{ await materialPdf(sp); toast('PDF gerado!'); }); break; }
     case 'qExport': { const sp=S.specs.find(x=>x.id===S.qSpec); if(!sp) break; baixarCsv('perguntas_'+(sp.codigo||sp.id)+(S.qs.length?'':'_modelo')+'.csv',qCsv(S.qs)); break; }
     case 'qModelo': { const sp=S.specs.find(x=>x.id===S.qSpec); baixarCsv('modelo_perguntas'+(sp?'_'+(sp.codigo||sp.id):'')+'.csv',qCsv([])); break; }
-    case 'qDelAsk': { const q=S.qs.find(x=>x.id===b.dataset.id); ask('Excluir pergunta?',q.enunciado,'Excluir',()=>run(async()=>{ await api.del('perguntas',q.id); S.qs=S.qs.filter(x=>x.id!==q.id); await recountSpec(S.qSpec); toast('Pergunta excluída'); }),true); break; }
+    case 'qDelAsk': { const q=S.qs.find(x=>x.id===b.dataset.id); ask('Excluir pergunta?',q.enunciado,'Excluir',()=>run(async()=>{ await api.del('perguntas',q.id); if(q.img) await api.del('imagens',q.img).catch(()=>{}); S.qs=S.qs.filter(x=>x.id!==q.id); await recountSpec(S.qSpec); toast('Pergunta excluída'); }),true); break; }
     case 'bold': { const i=+b.dataset.k; const ta=document.getElementById('mb-'+i); if(!ta) break; let st=ta.selectionStart, en=ta.selectionEnd; const v=ta.value; while(st<en&&/\s/.test(v[st])) st++; while(en>st&&/\s/.test(v[en-1])) en--; const sel=v.slice(st,en); let nv,cs,ce;
       if(sel&&/^\*\*[\s\S]*\*\*$/.test(sel)){ nv=v.slice(0,st)+sel.slice(2,-2)+v.slice(en); cs=st; ce=en-4; } else if(sel){ nv=v.slice(0,st)+'**'+sel+'**'+v.slice(en); cs=st; ce=en+4; } else { nv=v.slice(0,st)+'**texto em negrito**'+v.slice(en); cs=st+2; ce=st+18; }
       ta.value=nv; S.mat.texts[i].corpo=nv; ta.focus(); try{ta.setSelectionRange(cs,ce);}catch(err){} matPreview(); break; }
@@ -801,6 +817,9 @@ app.addEventListener('keydown', e=>{ const t=e.target; if(t&&t.dataset&&t.datase
 app.addEventListener('change', e=>{ const t=e.target; lastAct=Date.now();
   if(t.dataset.a2==='inDias'){ S.inDias=+t.value; return; }
   if(t.dataset.a2==='partAssoc'){ S.partAssoc=t.value; S.partCod=''; return; }
+  if(t.dataset.qimg&&t.files&&t.files[0]){ const f=t.files[0]; t.value='';
+    if(!/^image\/(png|jpeg|webp)$/.test(f.type)){ toast('Envie só PNG, JPG ou WEBP.'); return; } if(f.size>10*1024*1024){ toast('Imagem muito grande (máx. 10 MB).'); return; }
+    fotoPequena(f).then(d=>{ S.qImg={data:d,mudou:true}; qImgPrev(); }).catch(()=>toast('Não consegui ler a imagem.')); return; }
   if(t.dataset.img!=null&&t.files&&t.files[0]){ const i=+t.dataset.img, f=t.files[0]; if(!/^image\/(png|jpeg|webp)$/.test(f.type)){ toast('Envie só PNG, JPG ou WEBP.'); return; } if(f.size>10*1024*1024){ toast('Imagem muito grande (máx. 10 MB).'); return; }
     resizeImage(f).then(d=>{ const im=S.mat.imgs[i]; im.data=d; im.changed=true; render(); }).catch(()=>toast('Não consegui abrir essa imagem.')); return; }
   if(t.dataset.qimport&&t.files&&t.files[0]){ const f=t.files[0]; t.value=''; if(f.size>2e6){ S.err='Arquivo grande demais (máx. 2 MB).'; render(); return; } f.text().then(txt=>importarPerguntas(txt)).catch(()=>{ S.err='Não consegui ler o arquivo.'; render(); }); return; }
@@ -824,8 +843,15 @@ app.addEventListener('submit', e=>{ e.preventDefault(); lastAct=Date.now(); cons
   if(kind==='q'){ const d={enunciado:cleanLine(fd.get('enunciado'),200),certa:cleanLine(fd.get('certa'),120),erradas:[cleanLine(fd.get('e1'),120),cleanLine(fd.get('e2'),120),cleanLine(fd.get('e3'),120)],explicacao:cleanLine(fd.get('explicacao'),300),dificuldade:['facil','media','dificil'].includes(fd.get('dificuldade'))?fd.get('dificuldade'):'facil'};
     if(!d.enunciado||!d.certa||d.erradas.some(x=>!x)){ S.err='Preencha o enunciado e as 4 alternativas (texto puro).'; return render(); }
     if(new Set([d.certa,...d.erradas].map(x=>x.toLowerCase())).size<4){ S.err='As 4 alternativas precisam ser diferentes.'; return render(); }
-    const qe=S.qEdit;
-    return run(async()=>{ if(qe){ await api.set('perguntas',qe.id,{...d,atualizadaEm:Date.now()}); Object.assign(qe,d); S.qEdit=null; toast('Pergunta atualizada'); } else { const id=await api.add('perguntas',{...d,espId:S.qSpec,criadaEm:Date.now()}); S.qs.push({id,...d,espId:S.qSpec}); f.reset(); toast('Pergunta salva'); } await recountSpec(S.qSpec); });
+    const qe=S.qEdit, foto=S.qImg||{data:'',mudou:false};
+    return run(async()=>{
+      let id=qe?qe.id:null;
+      if(qe){ await api.set('perguntas',id,{...d,atualizadaEm:Date.now()}); Object.assign(qe,d); }
+      else { id=await api.add('perguntas',{...d,espId:S.qSpec,criadaEm:Date.now()}); S.qs.push({id,...d,espId:S.qSpec}); }
+      if(foto.mudou){ const q=S.qs.find(x=>x.id===id), imgId='q_'+id;
+        if(foto.data&&validImg(foto.data)){ await api.set('imagens',imgId,{data:foto.data,espId:S.qSpec,pergunta:id,atualizadaEm:Date.now()},false); await api.set('perguntas',id,{img:imgId}); if(q) q.img=imgId; }
+        else { await api.del('imagens',imgId).catch(()=>{}); await api.set('perguntas',id,{img:''}); if(q) q.img=''; } }
+      S.qEdit=null; S.qImg=null; if(!qe) f.reset(); toast(qe?'Pergunta atualizada':'Pergunta salva'); await recountSpec(S.qSpec); });
   }
   if(kind==='aviso'){ const ate=String(fd.get('ate')||''), de=String(fd.get('de')||''); const d={titulo:cleanLine(fd.get('titulo'),60),mensagem:cleanBlock(fd.get('mensagem'),400),tipo:fd.get('tipo')==='importante'?'importante':'info',de:/^\d{4}-\d{2}-\d{2}$/.test(de)?de:'',ate:/^\d{4}-\d{2}-\d{2}$/.test(ate)?ate:'',ativo:true,criadoEm:Date.now()};
     if(!d.titulo||!d.mensagem){ S.err='Preencha título e mensagem.'; return render(); }
