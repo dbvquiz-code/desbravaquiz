@@ -411,8 +411,11 @@ async function buscarPart(){
   else if(S.partAssoc){ lista=await api.list('perfis',['assoc',S.partAssoc]); }
   else { S.partMsg='Escolha uma associação/missão ou digite um código.'; S.partLista=null; return; }
   await carregarLiberados();
+  // versão instalada e último acesso de cada perfil
+  S.acc={}; try{ (await api.getMany('acessos',lista.map(p=>p.id))).forEach(a=>{ S.acc[a.id]=a; }); }catch(e){}
   S.partLista=lista.sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt'));
-  S.partMsg=lista.length+' perfil(is) encontrado(s).';
+  const cont={}; lista.forEach(p=>{ const a=S.acc[p.id]; const k=a&&a.vn?'v'+a.vn:'sem registro'; cont[k]=(cont[k]||0)+1; });
+  S.partMsg=lista.length+' perfil(is) encontrado(s). Versões: '+Object.entries(cont).sort((a,b)=>b[1]-a[1]).map(([k,n])=>k+' ('+n+')').join(' · ');
 }
 const msDe=v=>typeof v==='number'?v:(v&&v.toMillis?v.toMillis():(v&&v.seconds?v.seconds*1000:0));
 const diasDesde=ms=>ms?Math.floor((Date.now()-ms)/864e5):null;
@@ -473,6 +476,7 @@ function vPart(){
   <div style="display:flex;flex-direction:column;gap:8px">${lista.map(p=>`<div class="card row between wrap" style="padding:12px 14px;gap:10px">
     <div style="min-width:0"><b style="font-size:16px">${esc(p.nome)}</b> <span class="small muted">· ${esc(p.classe||'')}</span>
       <div class="small muted">Clube ${esc(p.clubeNome||'')} · ${esc(p.assocNome||'')} · ${esc(p.uniao||'')}</div>
+      <div class="small" style="font-weight:700;color:#2E4A38">📱 ${S.acc&&S.acc[p.id]&&S.acc[p.id].vn?'Versão '+esc(S.acc[p.id].vn):'Versão sem registro'}${S.acc&&S.acc[p.id]&&S.acc[p.id].em?' · último acesso '+esc(fmtDate(msDe(S.acc[p.id].em))):''}</div>
       <div class="small"><b style="color:var(--verde)">${+p.ptsTemporada||0} pts na temporada</b> · ${+p.ptsTotal||0} no total · desde ${esc(fmtDate(p.criadoEm))}</div>
       ${S.lib&&S.lib[p.id]?`<div class="small" style="font-weight:800;color:#7A5600">${esc(libTexto(S.lib[p.id]))}</div>`:''}
       ${S.partCodigo&&S.partCodigo.pid===p.id?`<div class="small" style="font-weight:800">Código: ${esc(S.partCodigo.cod)}</div>`:''}</div>
