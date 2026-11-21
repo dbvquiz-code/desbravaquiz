@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Torneio Ao Vivo · DesbravaQuiz</title><meta name="robots" content="noindex"><style>
+:root{--verde:#1F5D3A;--amarelo:#FFC531;--tinta:#1B2A20;--papel:#FBF8EF;--cinza:#5F6B66}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(160deg,#134F2B,#237242);color:#fff;font:17px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;align-items:center;justify-content:center;padding:20px}
+.c{background:var(--papel);color:var(--tinta);border-radius:24px;padding:26px 22px;max-width:420px;width:100%;text-align:center;box-shadow:0 14px 40px rgba(0,0,0,.25)}
+h1{margin:0 0 4px;font-size:26px}.mut{color:var(--cinza);font-size:15px}
+.cod{font-size:46px;font-weight:900;letter-spacing:6px;color:var(--verde);margin:10px 0}
+a.b{display:block;margin:12px 0;padding:16px;border-radius:40px;font-weight:800;text-decoration:none;font-size:18px}
+.y{background:var(--amarelo);color:var(--tinta)}.o{border:2px solid var(--verde);color:var(--verde)}
+ol{text-align:left;font-size:15px;color:var(--cinza);padding-left:20px}
+</style></head>
+<body><div class="c">
+<div style="font-size:40px">📡</div>
+<h1>Torneio Ao Vivo</h1>
+<div class="mut">DesbravaQuiz</div>
+<div class="cod" id="cod">------</div>
+<a class="b y" id="abrir" href="#">Abrir no app</a>
+<a class="b o" href="https://play.google.com/store/apps/details?id=br.app.desbravaquiz">Ainda não tenho o app</a>
+<ol><li>Toque em <b>Abrir no app</b>.</li><li>Se não abrir, abra o DesbravaQuiz, vá na aba <b>Ao Vivo</b> e digite o código acima.</li></ol>
+</div>
+<script>
+// só aceita 6 números: nada do endereço vira código na página
+var c=(new URLSearchParams(location.search).get('c')||'').replace(/\D/g,'').slice(0,6);
+if(c.length===6){
+  document.getElementById('cod').textContent=c;
+  var link='intent://aovivo?c='+c+'#Intent;scheme=desbravaquiz;package=br.app.desbravaquiz;S.browser_fallback_url='+encodeURIComponent('https://play.google.com/store/apps/details?id=br.app.desbravaquiz')+';end';
+  if(!/Android/i.test(navigator.userAgent)) link='desbravaquiz://aovivo?c='+c;
+  document.getElementById('abrir').href=link;
+  setTimeout(function(){ location.href=link; },400);
+}else{ document.getElementById('cod').textContent='código inválido'; document.getElementById('abrir').style.display='none'; }
+</script>
+</body></html>

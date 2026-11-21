@@ -169,6 +169,7 @@ async function loadAll(){
   S.assocs=assocs.sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt'));
   S.avisos=avisos.sort((a,b)=>(b.criadoEm||0)-(a.criadoEm||0));
   try{ const d=await api.get('config','desafio'); S.desafio=!!(d&&d.ativo); }catch(e){ S.desafio=false; }
+  try{ const d=await api.get('config','aovivo'); S.aovivo=!(d&&d.ativo===false); }catch(e){ S.aovivo=true; }
   try{ S.clubes=await api.list('clubes'); }catch(e){ S.clubes=[]; }
   try{ S.feedbacks=(await api.list('feedbacks')).sort((a,b)=>(b.criadoEm||0)-(a.criadoEm||0)); }catch(e){ S.feedbacks=[]; }
   S.loaded=true;
@@ -219,6 +220,13 @@ function vInicio(){
       <span class="pill" style="background:${S.desafio?'#DDF0E2':'#eee'};color:${S.desafio?'var(--verde)':'var(--cinza)'}">${S.desafio?'Ativo':'Desativado'}</span></div>
     <p class="p muted">10 perguntas misturadas de todas as especialidades publicadas, sem repetir. Só aparece para assinantes Prêmio. Quem não é assinante vê o cartão com cadeado e é levado à tela de assinatura.</p>
     <div><button class="btn ${S.desafio?'btn-o':'btn-y'}" data-a="togDesafio" ${S.busy?'disabled':''}>${S.desafio?'Desativar Desafio':'Ativar Desafio'}</button></div>
+  </div>
+  <div class="card" style="padding:18px;display:flex;flex-direction:column;gap:10px;border:2px solid ${S.aovivo?'var(--verde)':'#ddd'}">
+    <div class="row between wrap" style="gap:10px"><h2 class="h" style="font-size:20px">📡 Ao Vivo</h2>
+      <span class="pill" style="background:${S.aovivo?'#DDF0E2':'#eee'};color:${S.aovivo?'var(--verde)':'var(--cinza)'}">${S.aovivo?'Ativo':'Desativado'}</span></div>
+    <p class="p muted">Torneios em tempo real (até 50 pessoas). Só assinantes Prêmio criam; qualquer pessoa participa. Os pontos não vão para o ranking.${S.salas!=null?' Salas guardadas: <b>'+S.salas+'</b>.':''}</p>
+    <div class="row wrap"><button class="btn ${S.aovivo?'btn-o':'btn-y'}" data-a="togAoVivo" ${S.busy?'disabled':''}>${S.aovivo?'Desativar Ao Vivo':'Ativar Ao Vivo'}</button>
+    <button class="btn btn-o" data-a="salasLimpar" ${S.busy?'disabled':''}>🧹 Limpar salas com mais de 6 horas</button></div>
   </div>
   <div class="card" style="padding:18px;display:flex;flex-direction:column;gap:10px;${semDados?'border:2px solid var(--amarelo)':''}">
     <h2 class="h" style="font-size:20px">Dados iniciais</h2>
@@ -576,6 +584,18 @@ function render(){
 }
 
 // ---------- imagens ----------
+// ---------- Ao Vivo: limpeza de salas antigas ----------
+async function limparSalas(){
+  const salas=await api.list('salas'); const limite=Date.now()-6*3600e3; let n=0;
+  const quando=x=>{ const v=x.criadaEm; return v&&v.toMillis?v.toMillis():(v&&v.seconds?v.seconds*1000:+v||0); };
+  for(const sa of salas){ if(quando(sa)>limite) continue;
+    const ops=[];
+    for(const sub of ['jogadores','respostas']) (await api.list('salas/'+sa.id+'/'+sub)).forEach(d=>ops.push({col:'salas/'+sa.id+'/'+sub,id:d.id,del:true}));
+    ops.push({col:'salas',id:sa.id,del:true});
+    for(let k=0;k<ops.length;k+=400) await api.batch(ops.slice(k,k+400));
+    n++; }
+  S.salas=salas.length-n; toast(n?n+' sala(s) apagada(s).':'Nenhuma sala antiga.');
+}
 // ---------- duplicar especialidade (com material, fotos e perguntas) ----------
 async function duplicarEsp(sp){
   const codigo=nextCode(sp.area); let nome=cleanName(sp.nome+' - copia',60); let n=2; while(S.specs.some(s=>norm(s.nome)===norm(nome))) nome=cleanName(sp.nome+' - copia '+(n++),60);
@@ -699,6 +719,8 @@ app.addEventListener('click', e=>{
         const ops=[]; SEED.unioes.forEach(u=>ops.push({col:'unioes',id:u.id,data:u})); SEED.associacoes.forEach(x=>ops.push({col:'associacoes',id:x.id,data:x})); SEED.areas.forEach(x=>ops.push({col:'areas',id:x.id,data:x}));
         ops.push({col:'config',id:'classes',data:{lista:SEED.classes.map(c=>c.nome)}}); ops.push({col:'config',id:'geral',data:{limiteDiarioPontos:300,tetoPorEspecialidade:15,temporada:'trimestral',rankingMinutos:10,assinatura:{preco:'R$ 20,00',periodo:'semestral',diasGratis:15}}});
         await api.batch(ops); await loadAll(); toast('Dados iniciais carregados!'); })); break;
+    case 'togAoVivo': { const novo=!S.aovivo; ask(novo?'Ativar o Ao Vivo?':'Desativar o Ao Vivo?', novo?'A aba Ao Vivo volta a funcionar no app.':'Ninguém consegue criar nem entrar em torneios até você ativar de novo.', novo?'Ativar':'Desativar', ()=>run(async()=>{ await api.set('config','aovivo',{ativo:novo}); S.aovivo=novo; toast(novo?'Ao Vivo ativado!':'Ao Vivo desativado.'); })); break; }
+    case 'salasLimpar': ask('Limpar salas antigas?','Apaga as salas de torneio criadas há mais de 6 horas, com participantes e respostas. Torneios em andamento não são afetados.','Limpar',()=>run(limparSalas)); break;
     case 'togDesafio': { const novo=!S.desafio; ask(novo?'Ativar o Desafio?':'Desativar o Desafio?', novo?'Os assinantes passam a ver o Desafio na aba Quiz.':'O Desafio some do app para todos (o progresso de cada pessoa é mantido).', novo?'Ativar':'Desativar', ()=>run(async()=>{ await api.set('config','desafio',{ativo:novo}); S.desafio=novo; toast(novo?'Desafio ativado!':'Desafio desativado.'); })); break; }
     case 'specTipo': S.specTipo=b.dataset.t; S.specEdit=null; S.err=''; render(); break;
     case 'specNew': S.specEdit=null; S.err=''; render(); break;
