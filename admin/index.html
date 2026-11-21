@@ -102,7 +102,8 @@ const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(
 const rich=t=>esc(t).replace(/\*\*(.+?)\*\*/gs,'<strong>$1</strong>').split(/\n{2,}/).map(p=>'<p class="p">'+p.replace(/\n/g,'<br>')+'</p>').join('');
 const fmtDate=ms=>ms?new Date(ms).toLocaleString('pt-BR'):'';
 const N_TXT=6, N_IMG=6;
-const AREAS_PADRAO={AD:['ADRA','#1E3A8A'],HM:['Artes e Habilidades Manuais','#5BB4EC'],AA:['Atividades Agrícolas','#7A4A1E'],AM:['Atividades Missionárias e Comunitárias','#14275C'],EB:['Ensinos Bíblicos','#14275C'],AP:['Atividades Profissionais','#C62828'],AR:['Atividades Recreativas','#2E7A4E'],CS:['Ciência e Saúde','#6B3FA0'],EN:['Estudos da Natureza','#5F6B66'],HD:['Habilidades Domésticas','#FFC531']};
+const AREAS_PADRAO={AD:['ADRA','#1E3A8A'],HM:['Artes e Habilidades Manuais','#5BB4EC'],AA:['Atividades Agrícolas','#7A4A1E'],AM:['Atividades Missionárias e Comunitárias','#14275C'],EB:['Ensinos Bíblicos','#14275C'],AP:['Atividades Profissionais','#C62828'],AR:['Atividades Recreativas','#2E7A4E'],CS:['Ciência e Saúde','#6B3FA0'],EN:['Estudos da Natureza','#5F6B66'],HD:['Habilidades Domésticas','#FFC531'],NC:['Nisto Cremos','#0F766E'],MA:['Manual Administrativo','#7C2D12']};
+const MODULOS={NC:'Nisto Cremos',MA:'Manual Administrativo'}; const ehModulo=k=>!!MODULOS[k];
 const areaNome=k=>(AREAS_PADRAO[k]||[k])[0], areaCor=k=>(AREAS_PADRAO[k]||[0,'#5F6B66'])[1], areaFg=k=>k==='HD'||k==='HM'?'#1B2A20':'#fff';
 
 // ---------- camada de dados (Firebase real ou simulação com ?mock) ----------
@@ -226,17 +227,22 @@ function vInicio(){
   </div>`;
 }
 function vSpecs(){
-  const e=S.specEdit||(S.specEdit={id:'',nome:'',area:'AR',codigo:nextCode('AR'),paga:false,publicada:false});
-  return `<div class="row between wrap"><div><h1 class="h" style="font-size:30px">Especialidades</h1><div class="small muted">Nome, área, código (começa com a sigla da área) e acesso.</div></div><button class="btn btn-y" data-a="specNew">+ Nova especialidade</button></div>
+  const tipo=S.specTipo||'esp', mod=tipo!=='esp', tNome=mod?'quiz do '+MODULOS[tipo]:'especialidade';
+  const areaIni=mod?tipo:'AR';
+  const e=S.specEdit||(S.specEdit={id:'',nome:'',area:areaIni,codigo:nextCode(areaIni),paga:false,publicada:false});
+  const lista=S.specs.filter(x=>mod?x.area===tipo:!ehModulo(x.area));
+  const aba=(k,t)=>`<button class="chip" data-a="specTipo" data-t="${k}" style="${tipo===k?'background:var(--verde);color:#fff':''};font-size:15px;padding:8px 16px">${t} <b>(${S.specs.filter(x=>k==='esp'?!ehModulo(x.area):x.area===k).length})</b></button>`;
+  return `<div class="row wrap" style="gap:8px">${aba('esp','Especialidades')}${aba('NC','📖 Nisto Cremos')}${aba('MA','📘 Manual Administrativo')}</div>
+  <div class="row between wrap"><div><h1 class="h" style="font-size:30px">${mod?esc(MODULOS[tipo]):'Especialidades'}</h1><div class="small muted">${mod?'Cada item é um quiz deste módulo, com perguntas próprias (aba Perguntas). Aparece no app em Quiz → '+esc(MODULOS[tipo])+'.':'Nome, área, código (começa com a sigla da área) e acesso.'}</div></div><button class="btn btn-y" data-a="specNew">+ Novo ${esc(tNome)}</button></div>
   <div class="grid2">
     <div class="card tblbox" style="flex:999 1 480px;min-width:0"><table class="tbl"><thead><tr><th>Código</th><th>Nome</th><th>Área</th><th>Perguntas</th><th>Acesso</th><th>Status</th><th></th></tr></thead><tbody>
-      ${S.specs.map(s=>`<tr><td style="white-space:nowrap"><b>${esc(s.codigo)}</b></td><td style="font-weight:700">${esc(s.nome)}</td><td style="white-space:nowrap">${areaPill(s.area)} <span class="small muted">${esc(areaNome(s.area))}</span></td><td style="font-weight:800;color:${(s.nPerguntas||0)<15?'var(--vermelho-txt)':'var(--verde)'}">${s.nPerguntas||0}</td><td><span class="pill" style="background:${s.paga?'var(--amarelo-claro)':'#DDF0E2'};color:${s.paga?'#7A5600':'var(--verde)'}">${s.paga?'Paga':'Gratuita'}</span></td><td style="font-weight:700;color:${s.publicada?((+s.publicarEm||0)>Date.now()?'#B07800':'var(--verde)'):'var(--cinza)'}">${s.publicada?((+s.publicarEm||0)>Date.now()?'⏰ Agendada<div class="small" style="font-weight:600">'+esc(fmtDataHora(s.publicarEm))+'</div>':'Publicada'):'Rascunho'}</td>
+      ${lista.map(s=>`<tr><td style="white-space:nowrap"><b>${esc(s.codigo)}</b></td><td style="font-weight:700">${esc(s.nome)}</td><td style="white-space:nowrap">${areaPill(s.area)} <span class="small muted">${esc(areaNome(s.area))}</span></td><td style="font-weight:800;color:${(s.nPerguntas||0)<15?'var(--vermelho-txt)':'var(--verde)'}">${s.nPerguntas||0}</td><td><span class="pill" style="background:${s.paga?'var(--amarelo-claro)':'#DDF0E2'};color:${s.paga?'#7A5600':'var(--verde)'}">${s.paga?'Paga':'Gratuita'}</span></td><td style="font-weight:700;color:${s.publicada?((+s.publicarEm||0)>Date.now()?'#B07800':'var(--verde)'):'var(--cinza)'}">${s.publicada?((+s.publicarEm||0)>Date.now()?'⏰ Agendada<div class="small" style="font-weight:600">'+esc(fmtDataHora(s.publicarEm))+'</div>':'Publicada'):'Rascunho'}</td>
         <td style="white-space:nowrap"><button class="chip" data-a="specEdit" data-id="${esc(s.id)}">Editar</button> <button class="chip" data-a="goQs" data-id="${esc(s.id)}">Perguntas</button> <button class="chip" data-a="goMat" data-id="${esc(s.id)}">Material</button> <button class="chip" style="background:#FBE9E7;color:#B3261E" data-a="matPdf" data-id="${esc(s.id)}" ${S.busy?'disabled':''}>📄 PDF</button> <button class="chip" data-a="specPrev" data-id="${esc(s.id)}" title="Ver como fica no celular">📱 Prévia</button> <button class="chip" data-a="specDup" data-id="${esc(s.id)}" title="Duplicar com material e perguntas">⧉ Duplicar</button></td></tr>`).join('') || '<tr><td colspan="7" class="muted">Nenhuma especialidade ainda.</td></tr>'}
     </tbody></table></div>
     <form class="card" data-f="spec" style="flex:1 1 300px;min-width:0;padding:18px;display:flex;flex-direction:column;gap:12px">
-      <h2 class="h" style="font-size:20px">${e.id?'Editar especialidade':'Nova especialidade'}</h2>
+      <h2 class="h" style="font-size:20px">${e.id?'Editar '+esc(tNome):'Novo '+esc(tNome)}</h2>
       <div class="field"><label for="sp-n">Nome</label><input id="sp-n" name="nome" class="inp" value="${esc(e.nome)}" maxlength="60" required></div>
-      <div class="field"><label for="sp-a">Área</label><select id="sp-a" name="area" class="inp" data-ch="specArea">${Object.keys(AREAS_PADRAO).map(k=>`<option value="${k}" ${k===e.area?'selected':''}>${k} · ${esc(areaNome(k))}</option>`).join('')}</select></div>
+      ${mod?`<input type="hidden" name="area" value="${esc(tipo)}"><div class="small muted">Módulo: <b>${esc(MODULOS[tipo])}</b> (título do quiz, ex.: "Crença 1 - A Palavra de Deus" ou "Capítulo 3 - Unidades")</div>`:`<div class="field"><label for="sp-a">Área</label><select id="sp-a" name="area" class="inp" data-ch="specArea">${Object.keys(AREAS_PADRAO).filter(k=>!ehModulo(k)).map(k=>`<option value="${k}" ${k===e.area?'selected':''}>${k} · ${esc(areaNome(k))}</option>`).join('')}</select></div>`}
       <div class="field"><label for="sp-c">Código</label><input id="sp-c" name="codigo" class="inp" value="${esc(e.codigo)}" maxlength="6" required><span class="small muted">Formato ${esc(e.area)}-000</span></div>
       <label class="row between" style="font-weight:800">Paga (só assinantes)<input type="checkbox" name="paga" ${e.paga?'checked':''} style="width:22px;height:22px;accent-color:var(--verde)"></label>
       <label class="row between" style="font-weight:800">Publicada no app<input type="checkbox" name="publicada" ${e.publicada?'checked':''} style="width:22px;height:22px;accent-color:var(--verde)"></label>
@@ -694,6 +700,7 @@ app.addEventListener('click', e=>{
         ops.push({col:'config',id:'classes',data:{lista:SEED.classes.map(c=>c.nome)}}); ops.push({col:'config',id:'geral',data:{limiteDiarioPontos:300,tetoPorEspecialidade:15,temporada:'trimestral',rankingMinutos:10,assinatura:{preco:'R$ 20,00',periodo:'semestral',diasGratis:15}}});
         await api.batch(ops); await loadAll(); toast('Dados iniciais carregados!'); })); break;
     case 'togDesafio': { const novo=!S.desafio; ask(novo?'Ativar o Desafio?':'Desativar o Desafio?', novo?'Os assinantes passam a ver o Desafio na aba Quiz.':'O Desafio some do app para todos (o progresso de cada pessoa é mantido).', novo?'Ativar':'Desativar', ()=>run(async()=>{ await api.set('config','desafio',{ativo:novo}); S.desafio=novo; toast(novo?'Desafio ativado!':'Desafio desativado.'); })); break; }
+    case 'specTipo': S.specTipo=b.dataset.t; S.specEdit=null; S.err=''; render(); break;
     case 'specNew': S.specEdit=null; S.err=''; render(); break;
     case 'specEdit': { const s=S.specs.find(x=>x.id===b.dataset.id); S.specEdit={...s}; S.err=''; render(); window.scrollTo({top:0,behavior:'smooth'}); break; }
     case 'specDelAsk': { const s=S.specEdit; ask('Excluir '+s.nome+'?','A especialidade, todas as perguntas e o material dela serão apagados. Não pode ser desfeito.','Excluir tudo',()=>run(async()=>{
