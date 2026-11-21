@@ -46,6 +46,10 @@ input:focus{outline:none;border-color:var(--verde)}
 .pod .info b{display:block;font-size:clamp(22px,2.6vw,40px)}.pod .info small{color:var(--cinza);font-size:clamp(14px,1.3vw,20px)}
 .pod .base{border-radius:18px 18px 0 0;margin-top:8px}
 .suspense{font-size:clamp(26px,3.4vw,48px);font-weight:900;text-align:center;color:var(--verde);margin:6px 0}
+.tv .rodape{display:none}
+.nm{font-weight:900;font-size:19px;color:var(--tinta)}.cb{color:var(--cinza);font-weight:600;font-size:14px;margin-left:8px}
+.tv .nm{font-size:clamp(22px,2.2vw,34px)}.tv .cb{font-size:clamp(15px,1.4vw,22px)}.tv .lin .v{font-size:clamp(20px,2vw,32px)}.tv .lin .p{font-size:clamp(22px,2vw,32px);width:64px}
+.nomes .cb{margin-left:6px}
 .rodape{color:#E3F0E6;font-size:12px;margin-top:14px;text-align:center;max-width:520px}
 </style></head>
 <body>
@@ -78,7 +82,7 @@ function opcao(i,txt,extra){ return el('button',{class:'op'+(extra?' '+extra:'')
 function listaTop(top,meu){ const l=el('div',{class:'lista'});
   if(!top||!top.length) l.append(el('div',{class:'mut',style:'padding:8px 0'},'Ninguém pontuou ainda.'));
   (top||[]).slice(0,10).forEach((j,i)=>{ const pos=['🥇','🥈','🥉'][i]||((i+1)+'º');
-    l.append(el('div',{class:'lin'+(meu&&j.n===meu?' eu':'')},el('span',{class:'p'},pos),el('span',{class:'n'},String(j.n||''),el('small',null,String(j.c||''))),el('span',{class:'v'},String(j.p||0)))); });
+    l.append(el('div',{class:'lin'+(meu&&j.n===meu?' eu':'')},el('span',{class:'p'},pos),el('span',{class:'n'},el('span',{class:'nm'},String(j.n||'')),j.c?el('span',{class:'cb'},'· '+String(j.c)):null),el('span',{class:'v'},String(j.p||0)))); });
   return l; }
 
 // ---------- código da sala ----------
@@ -226,7 +230,7 @@ async function conectarTelao(){
 }
 function carregarQr(){ if(qrLib) return qrLib; qrLib=new Promise((ok,bad)=>{ const sc=document.createElement('script'); sc.src='https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js'; sc.onload=()=>ok(window.qrcode); sc.onerror=bad; document.head.appendChild(sc); }); return qrLib; }
 function desenharNomes(){ const box=$('nomes'); if(!box) return; $('qtd').textContent='👥 '+nomesTelao.size+'/50 participantes';
-  box.replaceChildren(...[...nomesTelao.values()].map(j=>el('span',null,String(j.nome||'?')))); }
+  box.replaceChildren(...[...nomesTelao.values()].map(j=>el('span',null,el('span',{class:'nm'},String(j.nome||'?')),j.clube?el('span',{class:'cb'},'· '+String(j.clube)):null))); }
 function renderTelao(s){
   const est=s.estado||'', i=typeof s.i==='number'?s.i:-1, n=s.n||0;
   if(est===ultEstado&&i===ultI) return; ultEstado=est; ultI=i;
@@ -257,7 +261,7 @@ function renderTelao(s){
 function podioTelao(top){
   const aviso=el('div',{class:'suspense'},'🥁 E o 3º lugar é…');
   const ordem=[1,0,2], alturas=[260,190,140], cores=['#FFC531','#C9CED6','#D9A066'], cols={};
-  const pod=el('div',{class:'pod'},...ordem.map(k=>{ const j=top[k]; const info=el('div',{class:'info'},el('div',{style:'font-size:clamp(50px,6vw,90px)'},['🥇','🥈','🥉'][k]),el('b',null,j?String(j.n):'—'),el('small',null,j?String(j.c||''):''),el('div',{style:'font-weight:900;color:var(--verde);font-size:clamp(18px,2vw,30px)'},j?j.p+' pts':''));
+  const pod=el('div',{class:'pod'},...ordem.map(k=>{ const j=top[k]; const info=el('div',{class:'info'},el('div',{style:'font-size:clamp(50px,6vw,90px)'},['🥇','🥈','🥉'][k]),el('b',null,j?String(j.n):'—',j&&j.c?el('span',{class:'cb',style:'display:inline'},'· '+String(j.c)):null),el('div',{style:'font-weight:900;color:var(--verde);font-size:clamp(18px,2vw,30px)'},j?j.p+' pts':''));
     cols[k]=info; return el('div',{class:'col'},info,el('div',{class:'base',style:'height:'+alturas[k]+'px;background:'+cores[k]})); }));
   const resto=el('div');
   mostrar(aviso,pod,resto);
