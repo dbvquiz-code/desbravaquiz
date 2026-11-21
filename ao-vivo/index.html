@@ -1,33 +1,201 @@
 <!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Torneio Ao Vivo · DesbravaQuiz</title><meta name="robots" content="noindex"><style>
-:root{--verde:#1F5D3A;--amarelo:#FFC531;--tinta:#1B2A20;--papel:#FBF8EF;--cinza:#5F6B66}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(160deg,#134F2B,#237242);color:#fff;font:17px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;align-items:center;justify-content:center;padding:20px}
-.c{background:var(--papel);color:var(--tinta);border-radius:24px;padding:26px 22px;max-width:420px;width:100%;text-align:center;box-shadow:0 14px 40px rgba(0,0,0,.25)}
-h1{margin:0 0 4px;font-size:26px}.mut{color:var(--cinza);font-size:15px}
-.cod{font-size:46px;font-weight:900;letter-spacing:6px;color:var(--verde);margin:10px 0}
-a.b{display:block;margin:12px 0;padding:16px;border-radius:40px;font-weight:800;text-decoration:none;font-size:18px}
-.y{background:var(--amarelo);color:var(--tinta)}.o{border:2px solid var(--verde);color:var(--verde)}
-ol{text-align:left;font-size:15px;color:var(--cinza);padding-left:20px}
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Torneio Ao Vivo · DesbravaQuiz</title><meta name="robots" content="noindex">
+<meta name="theme-color" content="#134F2B">
+<style>
+:root{--verde:#1F5D3A;--amarelo:#FFC531;--tinta:#1B2A20;--papel:#FBF8EF;--cinza:#5F6B66;--borda:#E6E1D1}
+*{box-sizing:border-box}html,body{margin:0}
+body{min-height:100vh;background:linear-gradient(160deg,#134F2B,#237242);color:var(--tinta);font:17px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;align-items:center;padding:14px}
+.top{width:100%;max-width:520px;display:flex;align-items:center;gap:10px;color:#fff;padding:4px 2px 12px}
+.top .t{flex:1;min-width:0}.top b{display:block;font-size:19px}.top small{color:var(--amarelo);font-weight:700}
+.top button{background:rgba(255,255,255,.15);border:0;color:#fff;border-radius:50%;width:42px;height:42px;font-size:19px;cursor:pointer}
+.tempo{background:rgba(255,255,255,.2);color:#fff;border-radius:50%;width:46px;height:46px;display:none;align-items:center;justify-content:center;font-weight:900;font-size:20px}
+.barra{width:100%;max-width:520px;height:7px;background:rgba(255,255,255,.25);border-radius:9px;overflow:hidden;margin-bottom:12px;display:none}
+.barra i{display:block;height:100%;width:100%;background:var(--amarelo);transition:width .1s linear}
+.c{background:var(--papel);border-radius:22px;padding:20px 18px;max-width:520px;width:100%;box-shadow:0 14px 40px rgba(0,0,0,.25)}
+.centro{text-align:center}h1{margin:0 0 4px;font-size:25px}h2{margin:16px 0 8px;font-size:19px}.mut{color:var(--cinza);font-size:15px}
+.cod{font-size:44px;font-weight:900;letter-spacing:6px;color:var(--verde);margin:6px 0}
+.btn{display:block;width:100%;margin:10px 0;padding:15px;border-radius:40px;font-weight:800;font-size:17px;border:0;cursor:pointer;text-decoration:none;text-align:center;font-family:inherit}
+.y{background:var(--amarelo);color:var(--tinta)}.o{background:transparent;border:2px solid var(--verde);color:var(--verde)}
+.btn:disabled{opacity:.5}
+label{display:block;font-weight:800;margin:14px 0 4px;font-size:15px}
+input{width:100%;padding:13px 14px;border-radius:14px;border:2px solid var(--borda);font-size:18px;font-family:inherit;background:#fff}
+input:focus{outline:none;border-color:var(--verde)}
+.erro{color:#B42318;font-weight:700;margin-top:10px}
+.op{display:flex;align-items:center;gap:12px;width:100%;min-height:66px;margin:10px 0;padding:12px 16px;border:0;border-radius:16px;color:#fff;font-weight:800;font-size:17px;text-align:left;cursor:pointer;font-family:inherit}
+.op .f{font-size:22px}.op.apaga{opacity:.35}.op.marca{outline:4px solid #143D27}
+.res{border-radius:18px;color:#fff;padding:16px;text-align:center;margin:4px 0 8px}
+.res b{display:block;font-size:26px}
+.lista{background:#fff;border:1px solid var(--borda);border-radius:16px;padding:6px 14px}
+.lin{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0ebdc}.lin:last-child{border:0}
+.lin .p{width:40px;font-weight:900;font-size:18px}.lin .n{flex:1;min-width:0}.lin .n small{display:block;color:var(--cinza);font-size:12px}
+.lin .v{font-weight:900;color:var(--verde)}.lin.eu{background:#FFF3C9;margin:0 -14px;padding:8px 14px}
+.grande{font-size:58px;line-height:1.1}
+.rodape{color:#E3F0E6;font-size:12px;margin-top:14px;text-align:center;max-width:520px}
 </style></head>
-<body><div class="c">
-<div style="font-size:40px">📡</div>
-<h1>Torneio Ao Vivo</h1>
-<div class="mut">DesbravaQuiz</div>
-<div class="cod" id="cod">------</div>
-<a class="b y" id="abrir" href="#">Abrir no app</a>
-<a class="b o" href="https://play.google.com/store/apps/details?id=br.app.desbravaquiz">Ainda não tenho o app</a>
-<ol><li>Toque em <b>Abrir no app</b>.</li><li>Se não abrir, abra o DesbravaQuiz, vá na aba <b>Ao Vivo</b> e digite o código acima.</li></ol>
-</div>
-<script>
-// só aceita 6 números: nada do endereço vira código na página
-var c=(new URLSearchParams(location.search).get('c')||'').replace(/\D/g,'').slice(0,6);
-if(c.length===6){
-  document.getElementById('cod').textContent=c;
-  var link='intent://aovivo?c='+c+'#Intent;scheme=desbravaquiz;package=br.app.desbravaquiz;S.browser_fallback_url='+encodeURIComponent('https://play.google.com/store/apps/details?id=br.app.desbravaquiz')+';end';
-  if(!/Android/i.test(navigator.userAgent)) link='desbravaquiz://aovivo?c='+c;
-  document.getElementById('abrir').href=link;
-  setTimeout(function(){ location.href=link; },400);
-}else{ document.getElementById('cod').textContent='código inválido'; document.getElementById('abrir').style.display='none'; }
+<body>
+<div class="top"><div class="t"><b id="titulo">📡 Torneio Ao Vivo</b><small id="sub">DesbravaQuiz</small></div>
+  <div class="tempo" id="tempo"></div><button id="som" title="Música" aria-label="Ligar ou desligar a música">🔊</button></div>
+<div class="barra" id="barra"><i id="barraI"></i></div>
+<div class="c" id="tela"></div>
+<div class="rodape">Pontos do torneio: acerto + rapidez + sequência + bônus de 100%. Não pedimos idade, e-mail, telefone nem fotos.</div>
+
+<script type="module">
+// ===== cole aqui as mesmas 6 linhas do firebaseConfig do painel =====
+const firebaseConfig = {
+  apiKey: "AIzaSyDY2JKBk_yhRitXYKTCJtHvgiwrGeQOu7U",
+  authDomain: "desbravaquiz-a2a82.firebaseapp.com",
+  projectId: "desbravaquiz-a2a82",
+  storageBucket: "desbravaquiz-a2a82.firebasestorage.app",
+  messagingSenderId: "206295901768",
+  appId: "1:206295901768:web:30e750f73633958338da7d"
+};
+const V='13.1.0', PLAY='https://play.google.com/store/apps/details?id=br.app.desbravaquiz';
+const CORES=['#E21B3C','#1368CE','#D89E00','#26890C'], FORMAS=['▲','◆','●','■'];
+const $=id=>document.getElementById(id);
+const tela=$('tela');
+
+// ---------- montagem segura da tela: textos sempre como texto, nunca como código ----------
+function el(tag,attrs,...filhos){ const e=document.createElement(tag); if(attrs) for(const k in attrs){ if(k==='class') e.className=attrs[k]; else if(k==='style') e.style.cssText=attrs[k]; else if(k.startsWith('on')) e.addEventListener(k.slice(2),attrs[k]); else e.setAttribute(k,attrs[k]); }
+  for(const f of filhos){ if(f==null||f===false) continue; e.append(f instanceof Node?f:document.createTextNode(String(f))); } return e; }
+function mostrar(...filhos){ tela.replaceChildren(...filhos.filter(Boolean)); window.scrollTo(0,0); }
+function opcao(i,txt,extra){ return el('button',{class:'op'+(extra?' '+extra:''),style:'background:'+CORES[i]},el('span',{class:'f'},FORMAS[i]),el('span',null,txt)); }
+function listaTop(top,meu){ const l=el('div',{class:'lista'});
+  if(!top||!top.length) l.append(el('div',{class:'mut',style:'padding:8px 0'},'Ninguém pontuou ainda.'));
+  (top||[]).slice(0,10).forEach((j,i)=>{ const pos=['🥇','🥈','🥉'][i]||((i+1)+'º');
+    l.append(el('div',{class:'lin'+(meu&&j.n===meu?' eu':'')},el('span',{class:'p'},pos),el('span',{class:'n'},String(j.n||''),el('small',null,String(j.c||''))),el('span',{class:'v'},String(j.p||0)))); });
+  return l; }
+
+// ---------- código da sala ----------
+const codigo=(new URLSearchParams(location.search).get('c')||'').replace(/\D/g,'').slice(0,6);
+const intent='intent://aovivo?c='+codigo+'#Intent;scheme=desbravaquiz;package=br.app.desbravaquiz;S.browser_fallback_url='+encodeURIComponent(PLAY)+';end';
+
+// ---------- música animada (sintetizada no navegador) ----------
+let ctxA=null, somOn=localStorage.getItem('dq_som')!=='0', musTimer=null, passo=0;
+$('som').textContent=somOn?'🔊':'🔇';
+$('som').onclick=()=>{ somOn=!somOn; localStorage.setItem('dq_som',somOn?'1':'0'); $('som').textContent=somOn?'🔊':'🔇'; if(!somOn) pararMusica(); else if(querMusica) tocarMusica(); };
+function audio(){ if(!ctxA){ try{ ctxA=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(ctxA&&ctxA.state==='suspended') ctxA.resume(); return ctxA; }
+const fr=n=>440*Math.pow(2,(n-69)/12);
+function nota(n,t,dur,vol,tipo){ const a=ctxA; if(!a) return; const o=a.createOscillator(), g=a.createGain(); o.type=tipo||'triangle'; o.frequency.value=fr(n);
+  g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.connect(g).connect(a.destination); o.start(t); o.stop(t+dur+0.02); }
+function bumbo(t){ const a=ctxA; const o=a.createOscillator(), g=a.createGain(); o.frequency.setValueAtTime(140,t); o.frequency.exponentialRampToValueAtTime(45,t+0.12); g.gain.setValueAtTime(0.5,t); g.gain.exponentialRampToValueAtTime(0.0001,t+0.16); o.connect(g).connect(a.destination); o.start(t); o.stop(t+0.18); }
+const CH=[[48,64,67,72],[45,64,69,72],[41,65,69,72],[43,62,67,71]];
+const MEL=[[72,0,74,76,0,76,74,72,74,0,72,0,67,0,0,0],[72,0,74,76,0,79,76,74,72,0,69,0,72,0,0,0],[77,0,76,74,0,72,74,76,77,0,76,0,72,0,0,0],[74,0,76,77,0,79,77,76,74,0,71,0,74,0,0,0]];
+let querMusica=false;
+function tocarMusica(){ querMusica=true; if(!somOn||musTimer||!audio()) return; const spb=60/152/4; let prox=ctxA.currentTime+0.05;
+  musTimer=setInterval(()=>{ while(prox<ctxA.currentTime+0.2){ const bar=Math.floor(passo/16)%4, s=passo%16;
+      if(s%4===0) bumbo(prox); if(s%4===0) nota(CH[bar][0],prox,spb*3.5,0.18); if(s%2===0) nota(CH[bar][1+(s/2)%3],prox,spb*1.2,0.03,'square');
+      const m=MEL[bar][s]; if(m) nota(m,prox,spb*2.2,0.09); passo++; prox+=spb; } },50); }
+function pararMusica(){ querMusica=querMusica&&false; clearInterval(musTimer); musTimer=null; }
+function efeito(ok){ if(!somOn||!audio()) return; const t=ctxA.currentTime; if(ok) [72,76,79,84].forEach((n,i)=>nota(n,t+i*0.07,0.25,0.2)); else { nota(55,t,0.18,0.12,'square'); nota(50,t+0.16,0.3,0.12,'square'); } }
+function fanfarra(){ if(!somOn||!audio()) return; const t=ctxA.currentTime; [[67,0],[72,.15],[76,.3],[79,.45],[84,.6]].forEach(([n,d])=>nota(n,t+d,d===.6?.7:.2,.2)); }
+
+// ---------- relógio ----------
+let relTimer=null;
+function relogio(total,aoAcabar){ const ini=Date.now(); $('tempo').style.display='flex'; $('barra').style.display='block'; clearInterval(relTimer);
+  const tick=()=>{ const falta=Math.max(0,total-(Date.now()-ini)/1000); $('tempo').textContent=Math.ceil(falta); $('barraI').style.width=(falta/total*100)+'%'; $('barraI').style.background=falta>5?'#FFC531':'#D7362B';
+    if(falta<=0){ clearInterval(relTimer); aoAcabar&&aoAcabar(); } }; tick(); relTimer=setInterval(tick,100); }
+function pararRelogio(){ clearInterval(relTimer); $('tempo').style.display='none'; $('barra').style.display='none'; }
+
+// ---------- tela inicial ----------
+function inicio(){
+  if(codigo.length!==6){ mostrar(el('div',{class:'centro'},el('div',{class:'grande'},'📡'),el('h1',null,'Torneio Ao Vivo'),el('p',{class:'mut'},'Abra o link ou leia o QR code que o apresentador mostrou.'),
+    el('label',{for:'cx'},'Código da sala'),el('input',{id:'cx',inputmode:'numeric',maxlength:'6',placeholder:'000000',style:'text-align:center;letter-spacing:6px;font-weight:900'}),
+    el('button',{class:'btn y',onclick:()=>{ const v=$('cx').value.replace(/\D/g,''); if(v.length===6) location.search='?c='+v; }},'Continuar'))); return; }
+  const nomeSalvo=localStorage.getItem('dq_nome')||'', clubeSalvo=localStorage.getItem('dq_clube')||'';
+  mostrar(el('div',{class:'centro'},el('h1',null,'Torneio Ao Vivo'),el('div',{class:'mut'},'Código da sala'),el('div',{class:'cod'},codigo)),
+    /Android/i.test(navigator.userAgent)?el('a',{class:'btn o',href:intent},'Abrir no app DesbravaQuiz'):null,
+    el('h2',{style:'margin-top:18px'},'Jogar pelo navegador'),
+    el('label',{for:'nm'},'Primeiro nome'),el('input',{id:'nm',maxlength:'10',autocomplete:'off',value:nomeSalvo,placeholder:'Ex.: Ana'}),
+    el('label',{for:'cl'},'Clube (opcional)'),el('input',{id:'cl',maxlength:'40',autocomplete:'off',value:clubeSalvo,placeholder:'Ex.: Águias do Norte'}),
+    el('div',{id:'erro',class:'erro'}),
+    el('button',{class:'btn y',id:'entrar',onclick:entrar},'Entrar na sala'),
+    el('p',{class:'mut centro'},'Só o primeiro nome aparece no ranking. Não pedimos idade, e-mail, telefone nem fotos.'),
+    el('a',{class:'btn o',href:PLAY,style:'font-size:15px;padding:11px'},'Baixar o app na Play Store'));
+}
+const PROIBIDAS=['porra','merda','caralho','puta','bosta','foda','fdp','viado','buceta','cuzao','otario','idiota','burro','babaca','corno'];
+const semAcento=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'');
+function limpar(s,max){ return String(s||'').replace(/[\u0000-\u001F\u007F​-‏‪-‮⁠-⁩﻿<>]/g,'').replace(/\s+/g,' ').trim().slice(0,max); }
+
+// ---------- Firebase ----------
+let fb=null, uid='', meuNome='';
+async function firebase(){ if(fb) return fb;
+  if(String(firebaseConfig.apiKey).includes('COLE_AQUI')) throw new Error('config');
+  const b=`https://www.gstatic.com/firebasejs/${V}/`;
+  const [A,Au,F]=await Promise.all([import(b+'firebase-app.js'),import(b+'firebase-auth.js'),import(b+'firebase-firestore.js')]);
+  const app=A.initializeApp(firebaseConfig); const auth=Au.getAuth(app); const db=F.getFirestore(app);
+  if(!auth.currentUser){ await new Promise(r=>{ const u=Au.onAuthStateChanged(auth,()=>{ u(); r(); }); }); }
+  if(!auth.currentUser) await Au.signInAnonymously(auth);
+  uid=auth.currentUser.uid; fb={F,db}; return fb; }
+
+async function entrar(){
+  audio(); // libera o som no navegador (precisa de um toque)
+  const nome=limpar($('nm').value,10), clube=limpar($('cl').value,40), er=$('erro');
+  if(!/^[A-Za-zÀ-ÖØ-öø-ÿ]{2,10}$/.test(nome)){ er.textContent='Digite só o primeiro nome (2 a 10 letras, sem espaço).'; return; }
+  const n=semAcento(nome+clube).toLowerCase().replace(/[^a-z]/g,''); if(PROIBIDAS.some(p=>n.includes(p))){ er.textContent='Escolha outro nome.'; return; }
+  const nomeF=nome.charAt(0).toUpperCase()+nome.slice(1).toLowerCase();
+  localStorage.setItem('dq_nome',nomeF); localStorage.setItem('dq_clube',clube);
+  $('entrar').disabled=true; er.textContent='';
+  try{
+    const {F,db}=await firebase();
+    const ref=F.doc(db,'salas',codigo), jog=F.doc(db,'salas',codigo,'jogadores',uid);
+    await F.runTransaction(db,async tx=>{
+      const s=await tx.get(ref); if(!s.exists()) throw new Error('Sala não encontrada. Confira o código.');
+      const j=await tx.get(jog); if(j.exists()) return;
+      if(s.data().estado!=='espera') throw new Error('Este torneio já começou.');
+      const qt=s.data().jogadores||0; if(qt>=50) throw new Error('A sala está cheia (50 participantes).');
+      tx.set(jog,{nome:nomeF,clube,em:F.serverTimestamp()}); tx.update(ref,{jogadores:qt+1});
+    });
+    meuNome=nomeF; ouvir();
+  }catch(e){ $('entrar').disabled=false;
+    er.textContent=e.message==='config'?'Página ainda não configurada pelo administrador.':/permission/i.test(e.message||'')?'Não foi possível entrar. A sala pode estar fechada.':(e.message||'Erro. Tente de novo.'); }
+}
+
+// ---------- jogo ----------
+let estado='', iAtual=-1, respondida=-1, escolha=-1;
+function ouvir(){ const {F,db}=fb;
+  F.onSnapshot(F.doc(db,'salas',codigo),s=>{ if(!s.exists()){ fim('O torneio foi encerrado.'); return; } render(s.data()); },()=>fim('A conexão com a sala caiu. Recarregue a página.')); }
+function fim(msg){ pararRelogio(); pararMusica(); mostrar(el('div',{class:'centro'},el('div',{class:'grande'},'🏁'),el('h1',null,msg),el('a',{class:'btn o',href:PLAY},'Baixar o DesbravaQuiz'))); }
+
+function render(s){
+  const est=s.estado||'', i=typeof s.i==='number'?s.i:-1, n=s.n||0;
+  if(est===estado&&i===iAtual&&est!=='espera') return;
+  if(i!==iAtual) escolha=-1;
+  estado=est; iAtual=i;
+  const meu=(s.res||{})[uid];
+  if(est==='espera'){ pararRelogio(); pararMusica(); $('sub').textContent='Sala de espera · '+codigo;
+    mostrar(el('div',{class:'centro'},el('div',{class:'grande'},'✅'),el('h1',null,'Você está na sala!'),el('p',{class:'mut'},'Aguarde o apresentador começar.'),
+      el('h2',null,'👥 '+(s.jogadores||0)+' participantes'),el('p',{class:'mut'},n+' questões · '+(s.tempo||20)+'s cada'))); return; }
+  if(est==='pergunta'){ const q=s.q||{}, ops=Array.isArray(q.o)?q.o:[]; $('sub').textContent='Pergunta '+(i+1)+' de '+n;
+    if(respondida===i){ mostrar(el('h2',{style:'margin-top:0'},String(q.e||'')),el('h2',{class:'centro',style:'color:var(--verde)'},'Resposta enviada! ✋'),escolha>=0?opcao(escolha,ops[escolha]):null,el('p',{class:'mut centro'},'Aguarde o fim do tempo…')); }
+    else { mostrar(el('h2',{style:'margin-top:0'},String(q.e||'')),...ops.map((o,k)=>{ const b=opcao(k,String(o)); b.onclick=()=>responder(i,k,ops,q); return b; }));
+      relogio(s.tempo||20,()=>{ if(respondida!==iAtual) mostrar(el('div',{class:'centro'},el('h1',null,'⏰ Tempo esgotado!'),el('p',{class:'mut'},'Aguarde o resultado…'))); }); }
+    tocarMusica(); return; }
+  if(est==='resultado'||est==='fim'){ pararRelogio(); pararMusica();
+    const ops=(s.q&&Array.isArray(s.q.o))?s.q.o:[], certa=typeof s.certa==='number'?s.certa:-1;
+    const ok=!!(meu&&meu.a), ganho=meu?meu.g||0:0, total=meu?meu.p||0:0, pos=meu?meu.r||0:0, seq=meu?meu.s||0:0, perfeito=!!(meu&&meu.x);
+    const partes=[];
+    if(est==='fim'){ fanfarra(); $('sub').textContent='Fim do torneio';
+      partes.push(el('div',{class:'centro'},el('div',{class:'grande'},pos===1?'🥇':pos===2?'🥈':pos===3?'🥉':'🏁'),el('h1',null,pos?'Você ficou em '+pos+'º de '+(s.total||0):'Torneio encerrado'),
+        el('div',{class:'cod',style:'font-size:30px;letter-spacing:0'},total+' pontos'),perfeito?el('p',{style:'font-weight:800;color:#B07800'},'💯 100% de acertos! +1000'):null));
+    } else { efeito(ok); $('sub').textContent='Resultado · '+(i+1)+' de '+n;
+      partes.push(el('div',{class:'res',style:'background:'+(ok?'#26890C':'#E21B3C')},el('b',null,ok?'✓ Acertou!':respondida===i?'✗ Errou':'⏰ Sem resposta'),
+        ok?el('div',{style:'font-weight:800;font-size:18px'},'+'+ganho+' pts'+(seq>=2?'   🔥 sequência x'+seq:'')):null,el('div',null,'Total: '+total+' pts · '+pos+'º lugar')));
+      if(certa>=0&&ops[certa]!=null) partes.push(el('div',{class:'mut',style:'font-weight:800;margin-top:10px'},'Resposta certa:'),opcao(certa,String(ops[certa]),'marca')); }
+    partes.push(el('h2',null,'🏆 Top 10'),listaTop(s.top,meuNome));
+    if(est==='fim') partes.push(el('a',{class:'btn y',href:PLAY},'Baixar o DesbravaQuiz'));
+    mostrar(...partes); return; }
+  if(est==='encerrada') fim('O apresentador encerrou o torneio.');
+}
+
+async function responder(i,k,ops,q){
+  if(respondida===i||estado!=='pergunta') return;
+  respondida=i; escolha=k; pararRelogio();
+  mostrar(el('h2',{style:'margin-top:0'},String(q.e||'')),el('h2',{class:'centro',style:'color:var(--verde)'},'Resposta enviada! ✋'),opcao(k,String(ops[k])),el('p',{class:'mut centro'},'Aguarde o fim do tempo…'));
+  try{ const {F,db}=fb; await F.setDoc(F.doc(db,'salas',codigo,'respostas',i+'_'+uid),{uid,i,op:k,em:F.serverTimestamp()}); }
+  catch(e){ respondida=-1; alert('Não deu tempo de enviar a resposta.'); }
+}
+
+inicio();
 </script>
 </body></html>
